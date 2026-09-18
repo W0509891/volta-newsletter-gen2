@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { getOverdueBacklogCount } from '@/lib/db/queries';
-import { Mail, Inbox, Clock, Send, PlusCircle, BarChart3, AlertCircle } from 'lucide-react';
+import { Mail, Inbox, Clock, Send, PlusCircle, BarChart3, AlertCircle, Zap } from 'lucide-react';
 
 export async function AdminNavbar({ currentPath }: { currentPath?: string }) {
   const overdueCount = await getOverdueBacklogCount();
 
   const navItems = [
     { href: '/admin', label: 'Curation Pipeline', icon: Inbox },
+    { href: '/admin/items/quick', label: 'Quick Capture', icon: Zap },
     {
       href: '/admin/backlog',
       label: 'Backlog Queue',
@@ -14,7 +15,7 @@ export async function AdminNavbar({ currentPath }: { currentPath?: string }) {
       badge: overdueCount > 0 ? overdueCount : undefined,
     },
     { href: '/admin/newsletters', label: 'Newsletters', icon: Mail },
-    { href: '/submit', label: 'Public Intake Form', icon: PlusCircle },
+    { href: '/submit', label: 'Public Intake', icon: PlusCircle },
   ];
 
   return (
