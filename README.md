@@ -20,67 +20,77 @@ Volta Builders Dispatch Generation 2 replaces ad-hoc template copying with a rob
 
 The platform operates as a unidirectional state progression with feedback loops for consent and backlog revisit:
 
-```
-+---------------------------------------------------------------------------------------------------+
-|                                      1. INTAKE & SOURCING                                         |
-|  - Staff Quick Capture (/admin/items/quick)                                                       |
-|  - Public / Partner Submission Form (/submit)                                                     |
-|  - Direct Curator Entry (/admin)                                                                  |
-+-------------------------------------------------+-------------------------------------------------+
-                                                  |
-                                                  v
-+---------------------------------------------------------------------------------------------------+
-|                                  2. CURATION & CONSENT LIFECYCLE                                  |
-|                                                                                                   |
-|   [ INBOX ] ----> [ DRAFT ] ----> [ PENDING_CONSENT ] ----> [ APPROVED ]                         |
-|      |               |                    |                      |                                |
-|      |               v                    v                      |                                |
-|      +--------> [ REJECTED ]      [ CONSENT REVOKED ]            |                                |
-|      |                                                           |                                |
-|      +--------> [ BACKLOG ] <====================================+                                |
-|                      |             (Parked with revisit_at date)                                  |
-|                      v                                                                            |
-|             [ OVERDUE QUEUE ] ---> Re-evaluate for draft                                          |
-+-------------------------------------------------+-------------------------------------------------+
-                                                  |
-                                                  v
-+---------------------------------------------------------------------------------------------------+
-|                                  3. EDITION ASSEMBLY & CURATION                                   |
-|  - Create Newsletter Edition (Slug, Subject, Preview Text)                                        |
-|  - Assign Approved Items into Sections:                                                           |
-|    * FEATURED (Hero story)          * WINS (Company milestones)                                   |
-|    * STORIES (Founder profiles)     * OPPORTUNITIES (Grants, hiring)                              |
-|    * EVENTS (Upcoming workshops)    * COMMUNITY (Ecosystem news)                                  |
-|  - Reorder item positions within sections                                                         |
-+-------------------------------------------------+-------------------------------------------------+
-                                                  |
-                                                  v
-+---------------------------------------------------------------------------------------------------+
-|                               4. TEMPLATE COMPILATION & INLINING                                  |
-|  - Modular Pug layout (templates/base-layout.pug + templates/sections/*)                          |
-|  - Table-based nested layouts (email client resilient)                                            |
-|  - Link Transformer: Injects UTM parameters (utm_source, utm_medium, utm_campaign)                |
-|  - Registers links in tracked_links table                                                         |
-|  - juice CSS Inlining: Inlines all styles and purges raw <style> tags                             |
-|  - Generates self-contained, email-safe HTML with *|UNSUB|* merge tag                             |
-+-------------------------------------------------+-------------------------------------------------+
-                                                  |
-                                                  v
-+---------------------------------------------------------------------------------------------------+
-|                              5. MAILCHIMP DISPATCH & CAMPAIGN SYNC                                |
-|  - Sync HTML payload to Mailchimp Campaign API                                                    |
-|  - Send live test emails to curators                                                              |
-|  - Execute final campaign dispatch                                                                |
-|  - Transition Newsletter status: DRAFT -> SCHEDULED -> SENDING -> SENT                            |
-+-------------------------------------------------+-------------------------------------------------+
-                                                  |
-                                                  v
-+---------------------------------------------------------------------------------------------------+
-|                                 6. FUNNEL ANALYTICS & ATTRIBUTION                                 |
-|  - Ingest campaign delivery stats (opens, clicks, bounces)                                        |
-|  - Aggregate item-level click counts via tracked_links                                            |
-|  - Funnel bridge ready for event attendance / check-in joins                                      |
-+---------------------------------------------------------------------------------------------------+
+```mermaid
+flowchart TD
+  subgraph intake["1. Intake & Sourcing"]
+    quick["Staff Quick Capture<br/>/admin/items/quick"]
+    submit["Public / Partner Submission Form<br/>/submit"]
+    direct["Direct Curator Entry<br/>/admin"]
+  end
+
+  subgraph consent["2. Curation & Consent Lifecycle"]
+    inbox["INBOX"]
+    draft["DRAFT"]
+    pending["PENDING_CONSENT"]
+    approved["APPROVED"]
+    rejected["REJECTED"]
+    revoked["CONSENT REVOKED"]
+    backlog["BACKLOG<br/>Parked with revisit_at date"]
+    overdue["OVERDUE QUEUE"]
+
+    inbox --> draft
+    draft --> pending
+    pending --> approved
+    inbox --> rejected
+    draft --> rejected
+    pending --> revoked
+    inbox --> backlog
+    approved --> backlog
+    backlog --> overdue
+    overdue -->|Re-evaluate| draft
+  end
+
+  subgraph assembly["3. Edition Assembly & Curation"]
+    edition["Create Newsletter Edition<br/>Slug, Subject, Preview Text"]
+    sections["Assign Approved Items into Sections<br/>FEATURED, WINS, STORIES, OPPORTUNITIES, EVENTS, COMMUNITY"]
+    reorder["Reorder item positions within sections"]
+
+    edition --> sections --> reorder
+  end
+
+  subgraph rendering["4. Template Compilation & Inlining"]
+    pug["Modular Pug layout<br/>templates/base-layout.pug + templates/sections/*"]
+    tables["Table-based nested layouts<br/>Email client resilient"]
+    links["Link Transformer<br/>Inject UTM parameters"]
+    tracked["Register links in tracked_links table"]
+    juice["juice CSS Inlining<br/>Inline styles and purge raw style tags"]
+    html["Self-contained email-safe HTML<br/>Includes *|UNSUB|* merge tag"]
+
+    pug --> tables --> links --> tracked --> juice --> html
+  end
+
+  subgraph dispatch["5. Mailchimp Dispatch & Campaign Sync"]
+    sync["Sync HTML payload to Mailchimp Campaign API"]
+    test["Send live test emails to curators"]
+    send["Execute final campaign dispatch"]
+    status["Newsletter status<br/>DRAFT -> SCHEDULED -> SENDING -> SENT"]
+
+    sync --> test --> send --> status
+  end
+
+  subgraph analytics["6. Funnel Analytics & Attribution"]
+    stats["Ingest campaign delivery stats<br/>opens, clicks, bounces"]
+    clicks["Aggregate item-level click counts<br/>via tracked_links"]
+    funnel["Funnel bridge ready for event attendance / check-in joins"]
+
+    stats --> clicks --> funnel
+  end
+
+  intake --> consent
+  approved --> edition
+  reorder --> rendering
+  html --> dispatch
+  status --> analytics
 ```
 
 ---
