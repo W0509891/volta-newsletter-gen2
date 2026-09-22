@@ -57,6 +57,27 @@ CREATE TABLE IF NOT EXISTS consent_records (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS founder_submissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  type TEXT NOT NULL,
+  title TEXT,
+  summary TEXT,
+  body TEXT,
+  company_name TEXT,
+  founder_name TEXT,
+  contact_name TEXT,
+  contact_email TEXT,
+  source_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+  media_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+  event JSONB,
+  notes TEXT,
+  identity_status TEXT NOT NULL DEFAULT 'UNVERIFIED',
+  submitted_via TEXT NOT NULL DEFAULT 'FOUNDER_MCP',
+  status TEXT NOT NULL DEFAULT 'RECEIVED',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS newsletters (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug TEXT UNIQUE NOT NULL,
@@ -99,6 +120,8 @@ CREATE INDEX IF NOT EXISTS idx_content_items_type ON content_items(type);
 CREATE INDEX IF NOT EXISTS idx_content_items_revisit_at ON content_items(revisit_at);
 CREATE INDEX IF NOT EXISTS idx_consent_records_content_item ON consent_records(content_item_id);
 CREATE INDEX IF NOT EXISTS idx_consent_records_contact ON consent_records(contact_id);
+CREATE INDEX IF NOT EXISTS idx_founder_submissions_status ON founder_submissions(status);
+CREATE INDEX IF NOT EXISTS idx_founder_submissions_created_at ON founder_submissions(created_at);
 CREATE INDEX IF NOT EXISTS idx_newsletters_slug ON newsletters(slug);
 CREATE INDEX IF NOT EXISTS idx_newsletter_items_newsletter ON newsletter_items(newsletter_id);
 CREATE INDEX IF NOT EXISTS idx_tracked_links_newsletter ON tracked_links(newsletter_id);

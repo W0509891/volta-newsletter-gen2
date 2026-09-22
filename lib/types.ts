@@ -23,6 +23,19 @@ export type ConsentStatus = 'PENDING' | 'GRANTED' | 'REVOKED' | 'EXPIRED';
 
 export type ConsentMethod = 'EMAIL' | 'VERBAL' | 'FORM' | 'RECORDING';
 
+export type FounderSubmissionType =
+  | 'FEATURED'
+  | 'STORIES'
+  | 'EVENTS'
+  | 'WINS'
+  | 'OPPORTUNITIES'
+  | 'COMMUNITY'
+  | 'OTHER';
+
+export type FounderSubmissionIdentityStatus = 'UNVERIFIED';
+export type FounderSubmissionVia = 'FOUNDER_MCP' | 'PUBLIC_FORM';
+export type FounderSubmissionStatus = 'RECEIVED' | 'TRIAGED' | 'PROMOTED' | 'REJECTED';
+
 export interface Event {
   id: string;
   title: string;
@@ -125,4 +138,33 @@ export interface TrackedLink {
   utmCampaign: string;
   clicks: number;
   createdAt: string;
+}
+
+export interface FounderSubmissionEvent {
+  name?: string;
+  startAt?: string;
+  endAt?: string;
+  location?: string;
+  registrationUrl?: string;
+}
+
+export interface FounderSubmission {
+  id: string;
+  type: FounderSubmissionType;
+  title?: string | null;
+  summary?: string | null;
+  body?: string | null;
+  companyName?: string | null;
+  founderName?: string | null;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  sourceUrls: string[];
+  mediaUrls: string[];
+  event?: FounderSubmissionEvent | null;
+  notes?: string | null;
+  identityStatus: FounderSubmissionIdentityStatus;
+  submittedVia: FounderSubmissionVia;
+  status: FounderSubmissionStatus;
+  createdAt: string;
+  updatedAt: string;
 }

@@ -13,6 +13,9 @@ import {
   TrackedLink,
   Contact,
   Event,
+  FounderSubmission,
+  FounderSubmissionEvent,
+  FounderSubmissionType,
 } from '@/lib/types';
 import { buildTrackedUrl } from '@/lib/tracked-links';
 
@@ -60,6 +63,33 @@ function mapNewsletter(row: any): Newsletter {
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
     itemCount: row.item_count !== undefined ? Number(row.item_count) : undefined,
+  };
+}
+
+function mapJsonArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+function mapFounderSubmission(row: any): FounderSubmission {
+  return {
+    id: row.id,
+    type: row.type as FounderSubmissionType,
+    title: row.title,
+    summary: row.summary,
+    body: row.body,
+    companyName: row.company_name,
+    founderName: row.founder_name,
+    contactName: row.contact_name,
+    contactEmail: row.contact_email,
+    sourceUrls: mapJsonArray(row.source_urls),
+    mediaUrls: mapJsonArray(row.media_urls),
+    event: (row.event || null) as FounderSubmissionEvent | null,
+    notes: row.notes,
+    identityStatus: row.identity_status,
+    submittedVia: row.submitted_via,
+    status: row.status,
+    createdAt: new Date(row.created_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString(),
   };
 }
 
@@ -653,4 +683,48 @@ export async function recordLinkClick(destinationUrl: string): Promise<void> {
   await query(`UPDATE tracked_links SET clicks = clicks + 1 WHERE destination_url = $1`, [
     destinationUrl,
   ]);
+}
+
+// Founder submissions
+export async function createFounderSubmission(data: {
+  type: FounderSubmissionType;
+  title?: string | null;
+  summary?: string | null;
+  body?: string | null;
+  companyName?: string | null;
+  founderName?: string | null;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  sourceUrls?: string[];
+  mediaUrls?: string[];
+  event?: FounderSubmissionEvent | null;
+  notes?: string | null;
+}): Promise<FounderSubmission> {
+  const sql = `
+    INSERT INTO founder_submissions (
+      type, title, summary, body, company_name, founder_name, contact_name, contact_email,
+      source_urls, media_urls, event, notes, identity_status, submitted_via, status
+    ) VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11::jsonb, $12,
+      'UNVERIFIED', 'FOUNDER_MCP', 'RECEIVED'
+    )
+    RETURNING *
+  `;
+
+  const res = await query(sql, [
+    data.type,
+    data.title || null,
+    data.summary || null,
+    data.body || null,
+    data.companyName || null,
+    data.founderName || null,
+    data.contactName || null,
+    data.contactEmail || null,
+    JSON.stringify(data.sourceUrls || []),
+    JSON.stringify(data.mediaUrls || []),
+    data.event ? JSON.stringify(data.event) : null,
+    data.notes || null,
+  ]);
+
+  return mapFounderSubmission(res.rows[0]);
 }
