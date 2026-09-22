@@ -23,6 +23,9 @@ import {
   NewsCandidate,
   NewsCandidateOwnership,
   NewsCandidateStatus,
+  NewsDeliveryChannel,
+  NewsDeliveryRecord,
+  NewsDeliveryType,
   NewsSource,
   NewsSourceType,
 } from '@/lib/types';
@@ -199,6 +202,17 @@ function mapNewsCandidate(row: any): NewsCandidate {
     promotedContentItemId: row.promoted_content_item_id,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
+  };
+}
+
+function mapNewsDeliveryRecord(row: any): NewsDeliveryRecord {
+  return {
+    id: row.id,
+    candidateId: row.candidate_id,
+    channel: row.channel as NewsDeliveryChannel,
+    deliveryType: row.delivery_type as NewsDeliveryType,
+    deliveredAt: new Date(row.delivered_at).toISOString(),
+    deliveryReference: row.delivery_reference,
   };
 }
 
@@ -1265,4 +1279,55 @@ export async function updateNewsCandidateStatus(
     [id, status, promotedContentItemId || null]
   );
   return res.rows.length ? mapNewsCandidate(res.rows[0]) : null;
+}
+
+export async function getUndeliveredNewsCandidates(data: {
+  channel: NewsDeliveryChannel;
+  deliveryType: NewsDeliveryType;
+  limit?: number;
+}): Promise<NewsCandidate[]> {
+  const res = await query(
+    `
+      SELECT nc.*
+      FROM news_candidates nc
+      LEFT JOIN news_delivery_records ndr
+        ON ndr.candidate_id = nc.id
+        AND ndr.channel = $1
+        AND ndr.delivery_type = $2
+      WHERE ndr.id IS NULL
+        AND nc.status IN ('NEW', 'SURFACED', 'SAVED')
+      ORDER BY COALESCE(nc.published_at, nc.discovered_at) DESC
+      LIMIT $3
+    `,
+    [data.channel, data.deliveryType, data.limit || 10]
+  );
+  return res.rows.map(mapNewsCandidate);
+}
+
+export async function recordNewsDelivery(data: {
+  candidateId: string;
+  channel: NewsDeliveryChannel;
+  deliveryType: NewsDeliveryType;
+  deliveryReference?: string | null;
+}): Promise<NewsDeliveryRecord> {
+  const res = await query(
+    `
+      INSERT INTO news_delivery_records (
+        candidate_id, channel, delivery_type, delivery_reference
+      ) VALUES (
+        $1, $2, $3, $4
+      )
+      ON CONFLICT (candidate_id, channel, delivery_type)
+      DO UPDATE SET delivery_reference = EXCLUDED.delivery_reference
+      RETURNING *
+    `,
+    [
+      data.candidateId,
+      data.channel,
+      data.deliveryType,
+      data.deliveryReference || null,
+    ]
+  );
+  await updateNewsCandidateStatus(data.candidateId, 'SURFACED');
+  return mapNewsDeliveryRecord(res.rows[0]);
 }

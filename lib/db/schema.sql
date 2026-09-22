@@ -204,6 +204,16 @@ CREATE TABLE IF NOT EXISTS news_candidates (
   UNIQUE (content_hash)
 );
 
+CREATE TABLE IF NOT EXISTS news_delivery_records (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  candidate_id UUID NOT NULL REFERENCES news_candidates(id) ON DELETE CASCADE,
+  channel TEXT NOT NULL,
+  delivery_type TEXT NOT NULL,
+  delivered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  delivery_reference TEXT,
+  UNIQUE (candidate_id, channel, delivery_type)
+);
+
 CREATE INDEX IF NOT EXISTS idx_content_items_status ON content_items(status);
 CREATE INDEX IF NOT EXISTS idx_content_items_type ON content_items(type);
 CREATE INDEX IF NOT EXISTS idx_content_items_revisit_at ON content_items(revisit_at);
@@ -222,6 +232,7 @@ CREATE INDEX IF NOT EXISTS idx_tracked_links_newsletter ON tracked_links(newslet
 CREATE INDEX IF NOT EXISTS idx_news_sources_enabled ON news_sources(enabled);
 CREATE INDEX IF NOT EXISTS idx_news_candidates_status ON news_candidates(status);
 CREATE INDEX IF NOT EXISTS idx_news_candidates_published_at ON news_candidates(published_at);
+CREATE INDEX IF NOT EXISTS idx_news_delivery_records_candidate ON news_delivery_records(candidate_id);
 
 INSERT INTO content_revisions (
   content_item_id, revision_number, title, summary, body, url, content_hash, created_by, created_at

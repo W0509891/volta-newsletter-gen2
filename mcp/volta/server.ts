@@ -36,6 +36,10 @@ import {
   saveNewsCandidate,
   searchNewsCandidates,
 } from '@/lib/services/news-service';
+import {
+  buildNewsDigest,
+  sendNewsDigest,
+} from '@/lib/notifications/notification-service';
 
 function jsonResult(value: Record<string, unknown>) {
   return {
@@ -334,6 +338,40 @@ export function createVoltaMcpServer() {
       inputSchema: {},
     },
     async () => jsonResult(await checkNewsSourcesNow())
+  );
+
+  server.registerTool(
+    'delivery.build_digest',
+    {
+      description: 'Build a digest preview for undelivered news candidates.',
+      inputSchema: {
+        channel: z.enum(['SLACK', 'DISCORD']),
+        limit: z.number().int().min(1).max(25).optional(),
+      },
+    },
+    async (input) => jsonResult(await buildNewsDigest(input))
+  );
+
+  server.registerTool(
+    'delivery.send_slack',
+    {
+      description: 'Send a Slack digest for undelivered news candidates.',
+      inputSchema: {
+        limit: z.number().int().min(1).max(25).optional(),
+      },
+    },
+    async ({ limit }) => jsonResult(await sendNewsDigest({ channel: 'SLACK', limit }))
+  );
+
+  server.registerTool(
+    'delivery.send_discord',
+    {
+      description: 'Send a Discord digest for undelivered news candidates.',
+      inputSchema: {
+        limit: z.number().int().min(1).max(25).optional(),
+      },
+    },
+    async ({ limit }) => jsonResult(await sendNewsDigest({ channel: 'DISCORD', limit }))
   );
 
   server.registerTool(

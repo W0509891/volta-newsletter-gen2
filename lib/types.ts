@@ -51,6 +51,8 @@ export type NewsSourceType =
   | 'API';
 export type NewsCandidateOwnership = 'VOLTA' | 'THIRD_PARTY' | 'UNKNOWN';
 export type NewsCandidateStatus = 'NEW' | 'SURFACED' | 'SAVED' | 'DISMISSED' | 'PROMOTED';
+export type NewsDeliveryChannel = 'SLACK' | 'DISCORD';
+export type NewsDeliveryType = 'DIGEST' | 'ALERT' | 'MANUAL';
 
 export interface Event {
   id: string;
@@ -259,4 +261,13 @@ export interface NewsCandidate {
   promotedContentItemId?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface NewsDeliveryRecord {
+  id: string;
+  candidateId: string;
+  channel: NewsDeliveryChannel;
+  deliveryType: NewsDeliveryType;
+  deliveredAt: string;
+  deliveryReference?: string | null;
 }
