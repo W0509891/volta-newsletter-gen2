@@ -145,6 +145,7 @@ function mapFounderSubmission(row: any): FounderSubmission {
     identityStatus: row.identity_status,
     submittedVia: row.submitted_via,
     status: row.status,
+    promotedContentItemId: row.promoted_content_item_id,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
   };
@@ -995,4 +996,44 @@ export async function createFounderSubmission(data: {
   ]);
 
   return mapFounderSubmission(res.rows[0]);
+}
+
+export async function getFounderSubmissions(filters?: {
+  status?: string;
+}): Promise<FounderSubmission[]> {
+  const params: any[] = [];
+  let sql = `SELECT * FROM founder_submissions WHERE 1=1`;
+  if (filters?.status) {
+    params.push(filters.status);
+    sql += ` AND status = $${params.length}`;
+  }
+  sql += ` ORDER BY created_at DESC`;
+  const res = await query(sql, params);
+  return res.rows.map(mapFounderSubmission);
+}
+
+export async function getFounderSubmissionById(
+  id: string
+): Promise<FounderSubmission | null> {
+  const res = await query(`SELECT * FROM founder_submissions WHERE id = $1`, [id]);
+  return res.rows.length ? mapFounderSubmission(res.rows[0]) : null;
+}
+
+export async function updateFounderSubmissionStatus(
+  id: string,
+  status: 'TRIAGED' | 'PROMOTED' | 'REJECTED',
+  promotedContentItemId?: string | null
+): Promise<FounderSubmission | null> {
+  const res = await query(
+    `
+      UPDATE founder_submissions
+      SET status = $2,
+          promoted_content_item_id = COALESCE($3, promoted_content_item_id),
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `,
+    [id, status, promotedContentItemId || null]
+  );
+  return res.rows.length ? mapFounderSubmission(res.rows[0]) : null;
 }

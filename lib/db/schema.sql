@@ -115,9 +115,13 @@ CREATE TABLE IF NOT EXISTS founder_submissions (
   identity_status TEXT NOT NULL DEFAULT 'UNVERIFIED',
   submitted_via TEXT NOT NULL DEFAULT 'FOUNDER_MCP',
   status TEXT NOT NULL DEFAULT 'RECEIVED',
+  promoted_content_item_id UUID REFERENCES content_items(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE founder_submissions
+  ADD COLUMN IF NOT EXISTS promoted_content_item_id UUID REFERENCES content_items(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS newsletters (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

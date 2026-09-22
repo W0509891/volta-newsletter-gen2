@@ -205,6 +205,7 @@ export interface FounderSubmission {
   identityStatus: FounderSubmissionIdentityStatus;
   submittedVia: FounderSubmissionVia;
   status: FounderSubmissionStatus;
+  promotedContentItemId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
