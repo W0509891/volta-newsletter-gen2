@@ -4,11 +4,43 @@ import { submitFounderContent } from '@/lib/services/submission-service';
 
 const urlSchema = z.url().max(2048);
 
+const founderSkills = [
+  {
+    id: 'submit-founder-update',
+    name: 'Submit founder update',
+    description:
+      'Package a founder milestone, company win, event, opportunity, or community update for Volta editorial review.',
+    actor: 'FOUNDER',
+    requiredTools: ['submission.create'],
+    instructions:
+      'Collect only the information the founder wants Volta to review. Submit it once with submission.create. Treat the returned submissionId as a receipt only; do not attempt to read, update, or list internal newsletter data.',
+  },
+];
+
 export function createFounderMcpServer() {
   const server = new McpServer({
     name: 'volta-founder-submissions',
     version: '0.1.0',
   });
+
+  server.registerResource(
+    'founder-skills-catalog',
+    'skills://catalog',
+    {
+      title: 'Founder Skills Catalog',
+      description: 'Append-only founder submission workflows available to external agents.',
+      mimeType: 'application/json',
+    },
+    async () => ({
+      contents: [
+        {
+          uri: 'skills://catalog',
+          mimeType: 'application/json',
+          text: JSON.stringify(founderSkills, null, 2),
+        },
+      ],
+    })
+  );
 
   server.registerTool(
     'submission.create',
