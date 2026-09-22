@@ -42,6 +42,15 @@ export type FounderSubmissionType =
 export type FounderSubmissionIdentityStatus = 'UNVERIFIED';
 export type FounderSubmissionVia = 'FOUNDER_MCP' | 'PUBLIC_FORM';
 export type FounderSubmissionStatus = 'RECEIVED' | 'TRIAGED' | 'PROMOTED' | 'REJECTED';
+export type NewsSourceType =
+  | 'RSS'
+  | 'WEBSITE'
+  | 'LINKEDIN_PAGE'
+  | 'LINKEDIN_PROFILE'
+  | 'MANUAL'
+  | 'API';
+export type NewsCandidateOwnership = 'VOLTA' | 'THIRD_PARTY' | 'UNKNOWN';
+export type NewsCandidateStatus = 'NEW' | 'SURFACED' | 'SAVED' | 'DISMISSED' | 'PROMOTED';
 
 export interface Event {
   id: string;
@@ -205,6 +214,48 @@ export interface FounderSubmission {
   identityStatus: FounderSubmissionIdentityStatus;
   submittedVia: FounderSubmissionVia;
   status: FounderSubmissionStatus;
+  promotedContentItemId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NewsSource {
+  id: string;
+  name: string;
+  type: NewsSourceType;
+  url: string;
+  entityId?: string | null;
+  enabled: boolean;
+  pollingIntervalMinutes: number;
+  priority: number;
+  lastCheckedAt?: string | null;
+  lastSuccessAt?: string | null;
+  lastErrorAt?: string | null;
+  lastError?: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NewsCandidate {
+  id: string;
+  sourceId?: string | null;
+  canonicalUrl: string;
+  originalUrl: string;
+  author?: string | null;
+  title: string;
+  rawExcerpt?: string | null;
+  rawContent?: string | null;
+  publishedAt?: string | null;
+  discoveredAt: string;
+  contentHash: string;
+  aiSummary?: string | null;
+  aiRelevanceReason?: string | null;
+  aiConfidence?: number | null;
+  sourceOwnership: NewsCandidateOwnership;
+  status: NewsCandidateStatus;
+  firstSurfacedAt?: string | null;
+  lastSurfacedAt?: string | null;
   promotedContentItemId?: string | null;
   createdAt: string;
   updatedAt: string;

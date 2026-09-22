@@ -20,6 +20,11 @@ import {
   FounderSubmission,
   FounderSubmissionEvent,
   FounderSubmissionType,
+  NewsCandidate,
+  NewsCandidateOwnership,
+  NewsCandidateStatus,
+  NewsSource,
+  NewsSourceType,
 } from '@/lib/types';
 import { buildTrackedUrl } from '@/lib/tracked-links';
 
@@ -145,6 +150,52 @@ function mapFounderSubmission(row: any): FounderSubmission {
     identityStatus: row.identity_status,
     submittedVia: row.submitted_via,
     status: row.status,
+    promotedContentItemId: row.promoted_content_item_id,
+    createdAt: new Date(row.created_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString(),
+  };
+}
+
+function mapNewsSource(row: any): NewsSource {
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type as NewsSourceType,
+    url: row.url,
+    entityId: row.entity_id,
+    enabled: Boolean(row.enabled),
+    pollingIntervalMinutes: Number(row.polling_interval_minutes),
+    priority: Number(row.priority),
+    lastCheckedAt: row.last_checked_at ? new Date(row.last_checked_at).toISOString() : null,
+    lastSuccessAt: row.last_success_at ? new Date(row.last_success_at).toISOString() : null,
+    lastErrorAt: row.last_error_at ? new Date(row.last_error_at).toISOString() : null,
+    lastError: row.last_error,
+    createdBy: row.created_by,
+    createdAt: new Date(row.created_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString(),
+  };
+}
+
+function mapNewsCandidate(row: any): NewsCandidate {
+  return {
+    id: row.id,
+    sourceId: row.source_id,
+    canonicalUrl: row.canonical_url,
+    originalUrl: row.original_url,
+    author: row.author,
+    title: row.title,
+    rawExcerpt: row.raw_excerpt,
+    rawContent: row.raw_content,
+    publishedAt: row.published_at ? new Date(row.published_at).toISOString() : null,
+    discoveredAt: new Date(row.discovered_at).toISOString(),
+    contentHash: row.content_hash,
+    aiSummary: row.ai_summary,
+    aiRelevanceReason: row.ai_relevance_reason,
+    aiConfidence: row.ai_confidence === null ? null : Number(row.ai_confidence),
+    sourceOwnership: row.source_ownership as NewsCandidateOwnership,
+    status: row.status as NewsCandidateStatus,
+    firstSurfacedAt: row.first_surfaced_at ? new Date(row.first_surfaced_at).toISOString() : null,
+    lastSurfacedAt: row.last_surfaced_at ? new Date(row.last_surfaced_at).toISOString() : null,
     promotedContentItemId: row.promoted_content_item_id,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
@@ -1036,4 +1087,182 @@ export async function updateFounderSubmissionStatus(
     [id, status, promotedContentItemId || null]
   );
   return res.rows.length ? mapFounderSubmission(res.rows[0]) : null;
+}
+
+// News sources and candidates
+export async function createNewsSource(data: {
+  name: string;
+  type: NewsSourceType;
+  url: string;
+  enabled?: boolean;
+  pollingIntervalMinutes?: number;
+  priority?: number;
+  createdBy?: string;
+}): Promise<NewsSource> {
+  const res = await query(
+    `
+      INSERT INTO news_sources (
+        name, type, url, enabled, polling_interval_minutes, priority, created_by
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7
+      )
+      RETURNING *
+    `,
+    [
+      data.name,
+      data.type,
+      data.url,
+      data.enabled ?? true,
+      data.pollingIntervalMinutes || 1440,
+      data.priority || 0,
+      data.createdBy || 'volta',
+    ]
+  );
+  return mapNewsSource(res.rows[0]);
+}
+
+export async function getNewsSources(filters?: {
+  enabled?: boolean;
+}): Promise<NewsSource[]> {
+  const params: any[] = [];
+  let sql = `SELECT * FROM news_sources WHERE 1=1`;
+  if (filters?.enabled !== undefined) {
+    params.push(filters.enabled);
+    sql += ` AND enabled = $${params.length}`;
+  }
+  sql += ` ORDER BY priority DESC, name ASC`;
+  const res = await query(sql, params);
+  return res.rows.map(mapNewsSource);
+}
+
+export async function updateNewsSourceCheckResult(
+  id: string,
+  result: { success: boolean; error?: string | null }
+): Promise<void> {
+  await query(
+    `
+      UPDATE news_sources
+      SET last_checked_at = NOW(),
+          last_success_at = CASE WHEN $2 THEN NOW() ELSE last_success_at END,
+          last_error_at = CASE WHEN $2 THEN NULL ELSE NOW() END,
+          last_error = CASE WHEN $2 THEN NULL ELSE $3 END,
+          updated_at = NOW()
+      WHERE id = $1
+    `,
+    [id, result.success, result.error || null]
+  );
+}
+
+export async function upsertNewsCandidate(data: {
+  sourceId?: string | null;
+  canonicalUrl: string;
+  originalUrl: string;
+  author?: string | null;
+  title: string;
+  rawExcerpt?: string | null;
+  rawContent?: string | null;
+  publishedAt?: string | null;
+  contentHash: string;
+  aiSummary?: string | null;
+  aiRelevanceReason?: string | null;
+  aiConfidence?: number | null;
+  sourceOwnership?: NewsCandidateOwnership;
+}): Promise<{ candidate: NewsCandidate; created: boolean }> {
+  const existing = await query(
+    `
+      SELECT *
+      FROM news_candidates
+      WHERE canonical_url = $1 OR content_hash = $2
+      ORDER BY created_at ASC
+      LIMIT 1
+    `,
+    [data.canonicalUrl, data.contentHash]
+  );
+  if (existing.rows.length > 0) {
+    return {
+      candidate: mapNewsCandidate(existing.rows[0]),
+      created: false,
+    };
+  }
+
+  const res = await query(
+    `
+      INSERT INTO news_candidates (
+        source_id, canonical_url, original_url, author, title, raw_excerpt, raw_content,
+        published_at, content_hash, ai_summary, ai_relevance_reason, ai_confidence,
+        source_ownership, status
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'NEW'
+      )
+      ON CONFLICT (canonical_url)
+      DO UPDATE SET
+        last_surfaced_at = news_candidates.last_surfaced_at,
+        updated_at = NOW()
+      RETURNING *, (xmax = 0) AS inserted
+    `,
+    [
+      data.sourceId || null,
+      data.canonicalUrl,
+      data.originalUrl,
+      data.author || null,
+      data.title,
+      data.rawExcerpt || null,
+      data.rawContent || null,
+      data.publishedAt ? new Date(data.publishedAt) : null,
+      data.contentHash,
+      data.aiSummary || null,
+      data.aiRelevanceReason || null,
+      data.aiConfidence ?? null,
+      data.sourceOwnership || 'UNKNOWN',
+    ]
+  );
+  return {
+    candidate: mapNewsCandidate(res.rows[0]),
+    created: Boolean(res.rows[0].inserted),
+  };
+}
+
+export async function getNewsCandidates(filters?: {
+  status?: NewsCandidateStatus;
+  search?: string;
+}): Promise<NewsCandidate[]> {
+  const params: any[] = [];
+  let sql = `SELECT * FROM news_candidates WHERE 1=1`;
+  if (filters?.status) {
+    params.push(filters.status);
+    sql += ` AND status = $${params.length}`;
+  }
+  if (filters?.search) {
+    params.push(`%${filters.search}%`);
+    sql += ` AND (title ILIKE $${params.length} OR raw_excerpt ILIKE $${params.length} OR ai_summary ILIKE $${params.length})`;
+  }
+  sql += ` ORDER BY COALESCE(published_at, discovered_at) DESC`;
+  const res = await query(sql, params);
+  return res.rows.map(mapNewsCandidate);
+}
+
+export async function getNewsCandidateById(id: string): Promise<NewsCandidate | null> {
+  const res = await query(`SELECT * FROM news_candidates WHERE id = $1`, [id]);
+  return res.rows.length ? mapNewsCandidate(res.rows[0]) : null;
+}
+
+export async function updateNewsCandidateStatus(
+  id: string,
+  status: NewsCandidateStatus,
+  promotedContentItemId?: string | null
+): Promise<NewsCandidate | null> {
+  const res = await query(
+    `
+      UPDATE news_candidates
+      SET status = $2,
+          first_surfaced_at = CASE WHEN $2 = 'SURFACED' AND first_surfaced_at IS NULL THEN NOW() ELSE first_surfaced_at END,
+          last_surfaced_at = CASE WHEN $2 = 'SURFACED' THEN NOW() ELSE last_surfaced_at END,
+          promoted_content_item_id = COALESCE($3, promoted_content_item_id),
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `,
+    [id, status, promotedContentItemId || null]
+  );
+  return res.rows.length ? mapNewsCandidate(res.rows[0]) : null;
 }

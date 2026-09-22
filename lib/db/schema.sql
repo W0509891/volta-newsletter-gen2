@@ -160,6 +160,50 @@ CREATE TABLE IF NOT EXISTS tracked_links (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS news_sources (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  type TEXT NOT NULL,
+  url TEXT NOT NULL,
+  entity_id UUID,
+  enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  polling_interval_minutes INTEGER NOT NULL DEFAULT 1440,
+  priority INTEGER NOT NULL DEFAULT 0,
+  last_checked_at TIMESTAMPTZ,
+  last_success_at TIMESTAMPTZ,
+  last_error_at TIMESTAMPTZ,
+  last_error TEXT,
+  created_by TEXT NOT NULL DEFAULT 'volta',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS news_candidates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  source_id UUID REFERENCES news_sources(id) ON DELETE SET NULL,
+  canonical_url TEXT NOT NULL,
+  original_url TEXT NOT NULL,
+  author TEXT,
+  title TEXT NOT NULL,
+  raw_excerpt TEXT,
+  raw_content TEXT,
+  published_at TIMESTAMPTZ,
+  discovered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  content_hash TEXT NOT NULL,
+  ai_summary TEXT,
+  ai_relevance_reason TEXT,
+  ai_confidence NUMERIC,
+  source_ownership TEXT NOT NULL DEFAULT 'UNKNOWN',
+  status TEXT NOT NULL DEFAULT 'NEW',
+  first_surfaced_at TIMESTAMPTZ,
+  last_surfaced_at TIMESTAMPTZ,
+  promoted_content_item_id UUID REFERENCES content_items(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (canonical_url),
+  UNIQUE (content_hash)
+);
+
 CREATE INDEX IF NOT EXISTS idx_content_items_status ON content_items(status);
 CREATE INDEX IF NOT EXISTS idx_content_items_type ON content_items(type);
 CREATE INDEX IF NOT EXISTS idx_content_items_revisit_at ON content_items(revisit_at);
@@ -175,6 +219,9 @@ CREATE INDEX IF NOT EXISTS idx_founder_submissions_created_at ON founder_submiss
 CREATE INDEX IF NOT EXISTS idx_newsletters_slug ON newsletters(slug);
 CREATE INDEX IF NOT EXISTS idx_newsletter_items_newsletter ON newsletter_items(newsletter_id);
 CREATE INDEX IF NOT EXISTS idx_tracked_links_newsletter ON tracked_links(newsletter_id);
+CREATE INDEX IF NOT EXISTS idx_news_sources_enabled ON news_sources(enabled);
+CREATE INDEX IF NOT EXISTS idx_news_candidates_status ON news_candidates(status);
+CREATE INDEX IF NOT EXISTS idx_news_candidates_published_at ON news_candidates(published_at);
 
 INSERT INTO content_revisions (
   content_item_id, revision_number, title, summary, body, url, content_hash, created_by, created_at
