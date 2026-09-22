@@ -1,0 +1,12 @@
+Dockerfile
+docker-compose.yaml
+.dockerignore
+node_modules
+.next
+.ai
+.codex
+agents
+interviews
+tests
+.env.*
+.*.md

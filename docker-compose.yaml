@@ -1,0 +1,33 @@
+name: volta-newsletter-server
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: volta-newsletter-server
+    restart: unless-stopped
+    ports:
+      - "3104:3000"
+    networks:
+      dkr-ntw-apps:
+        ipv4_address: 172.20.0.2
+    env_file:
+      - .env
+    volumes:
+      - dkr-vlm-volta_news_letter:/volta-newsletter-server
+
+networks:
+  dkr-ntw-apps:
+    external: false
+    name: dkr-ntw-apps
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+volumes:
+  dkr-vlm-volta_news_letter:
+    external: false
+    name: dkr-vlm-volta_news_letter
