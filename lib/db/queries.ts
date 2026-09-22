@@ -1,9 +1,12 @@
 import { query } from '@/lib/db';
+import crypto from 'crypto';
 import {
   ContentItem,
   ContentItemStatus,
   ContentItemType,
   ConsentRecord,
+  ConsentRequest,
+  ConsentRequestStatus,
   ConsentStatus,
   ConsentMethod,
   Newsletter,
@@ -12,6 +15,7 @@ import {
   NewsletterItem,
   TrackedLink,
   Contact,
+  ContentRevision,
   Event,
   FounderSubmission,
   FounderSubmissionEvent,
@@ -23,6 +27,8 @@ import { buildTrackedUrl } from '@/lib/tracked-links';
 function mapContentItem(row: any): ContentItem {
   return {
     id: row.id,
+    currentRevisionId: row.current_revision_id,
+    approvedRevisionId: row.approved_revision_id,
     type: row.type as ContentItemType,
     title: row.title,
     body: row.body,
@@ -45,6 +51,57 @@ function mapContentItem(row: any): ContentItem {
     consentMethod: row.consent_method as ConsentMethod | null,
     consentEvidence: row.consent_evidence,
   };
+}
+
+function mapContentRevision(row: any): ContentRevision {
+  return {
+    id: row.id,
+    contentItemId: row.content_item_id,
+    revisionNumber: Number(row.revision_number),
+    title: row.title,
+    summary: row.summary,
+    body: row.body,
+    url: row.url,
+    contentHash: row.content_hash,
+    createdBy: row.created_by,
+    createdAt: new Date(row.created_at).toISOString(),
+  };
+}
+
+function mapConsentRequest(row: any): ConsentRequest {
+  return {
+    id: row.id,
+    contentItemId: row.content_item_id,
+    revisionId: row.revision_id,
+    contactId: row.contact_id,
+    recipientName: row.recipient_name,
+    recipientEmail: row.recipient_email,
+    status: row.status as ConsentRequestStatus,
+    expiresAt: new Date(row.expires_at).toISOString(),
+    createdBy: row.created_by,
+    createdAt: new Date(row.created_at).toISOString(),
+    respondedAt: row.responded_at ? new Date(row.responded_at).toISOString() : null,
+    responseNotes: row.response_notes,
+  };
+}
+
+function buildContentHash(data: {
+  title: string;
+  summary?: string | null;
+  body?: string | null;
+  url?: string | null;
+}) {
+  return crypto
+    .createHash('sha256')
+    .update(
+      JSON.stringify({
+        title: data.title,
+        summary: data.summary || '',
+        body: data.body || '',
+        url: data.url || '',
+      })
+    )
+    .digest('hex');
 }
 
 function mapNewsletter(row: any): Newsletter {
@@ -171,6 +228,86 @@ export async function getContentItemById(id: string): Promise<ContentItem | null
   return res.rows.length ? mapContentItem(res.rows[0]) : null;
 }
 
+export async function createContentRevisionForItem(
+  contentItemId: string,
+  createdBy: string = 'volta'
+): Promise<ContentRevision | null> {
+  const item = await getContentItemById(contentItemId);
+  if (!item) return null;
+
+  const existingCurrent = item.currentRevisionId
+    ? await getContentRevisionById(item.currentRevisionId)
+    : null;
+  const contentHash = buildContentHash(item);
+
+  if (existingCurrent?.contentHash === contentHash) {
+    return existingCurrent;
+  }
+
+  const nextNumberRes = await query(
+    `
+      SELECT COALESCE(MAX(revision_number), 0) + 1 AS next_revision_number
+      FROM content_revisions
+      WHERE content_item_id = $1
+    `,
+    [contentItemId]
+  );
+  const nextRevisionNumber = Number(nextNumberRes.rows[0]?.next_revision_number || 1);
+
+  const res = await query(
+    `
+      INSERT INTO content_revisions (
+        content_item_id, revision_number, title, summary, body, url, content_hash, created_by
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8
+      )
+      RETURNING *
+    `,
+    [
+      contentItemId,
+      nextRevisionNumber,
+      item.title,
+      item.summary || null,
+      item.body || null,
+      item.url || null,
+      contentHash,
+      createdBy,
+    ]
+  );
+  const revision = mapContentRevision(res.rows[0]);
+  await query(
+    `
+      UPDATE content_items
+      SET current_revision_id = $1,
+          approved_revision_id = CASE
+            WHEN approved_revision_id = $1 THEN approved_revision_id
+            ELSE approved_revision_id
+          END,
+          updated_at = NOW()
+      WHERE id = $2
+    `,
+    [revision.id, contentItemId]
+  );
+  return revision;
+}
+
+export async function getContentRevisionById(
+  revisionId: string
+): Promise<ContentRevision | null> {
+  const res = await query(`SELECT * FROM content_revisions WHERE id = $1`, [revisionId]);
+  return res.rows.length ? mapContentRevision(res.rows[0]) : null;
+}
+
+export async function getCurrentContentRevision(
+  contentItemId: string
+): Promise<ContentRevision | null> {
+  const item = await getContentItemById(contentItemId);
+  if (item?.currentRevisionId) {
+    return getContentRevisionById(item.currentRevisionId);
+  }
+  return createContentRevisionForItem(contentItemId, 'migration');
+}
+
 export async function createContentItem(data: {
   type: ContentItemType;
   title: string;
@@ -203,6 +340,7 @@ export async function createContentItem(data: {
     data.revisitAt ? new Date(data.revisitAt) : null,
   ];
   const res = await query(sql, params);
+  await createContentRevisionForItem(res.rows[0].id, 'intake');
   const item = await getContentItemById(res.rows[0].id);
   return item!;
 }
@@ -253,8 +391,12 @@ export async function updateContentItem(
 
   setClauses.push('updated_at = NOW()');
   const sql = `UPDATE content_items SET ${setClauses.join(', ')} WHERE id = $1 RETURNING id`;
+  const createsNewRevision = ['title', 'summary', 'body', 'url'].some((field) => field in data);
   const res = await query(sql, params);
   if (res.rows.length === 0) return null;
+  if (createsNewRevision) {
+    await createContentRevisionForItem(id, 'volta');
+  }
   return getContentItemById(id);
 }
 
@@ -314,6 +456,9 @@ export async function getConsentRecords(contentItemId?: string): Promise<Consent
   return res.rows.map((row) => ({
     id: row.id,
     contentItemId: row.content_item_id,
+    revisionId: row.revision_id,
+    consentRequestId: row.consent_request_id,
+    contentHash: row.content_hash,
     contactId: row.contact_id,
     status: row.status as ConsentStatus,
     method: row.method as ConsentMethod,
@@ -332,22 +477,35 @@ export async function getConsentRecords(contentItemId?: string): Promise<Consent
 export async function recordConsent(data: {
   contentItemId: string;
   contactId: string;
+  revisionId?: string | null;
+  consentRequestId?: string | null;
+  contentHash?: string | null;
   status: ConsentStatus;
   method: ConsentMethod;
   evidence?: string | null;
   notes?: string | null;
 }): Promise<ConsentRecord> {
+  const currentRevision = data.revisionId
+    ? await getContentRevisionById(data.revisionId)
+    : await getCurrentContentRevision(data.contentItemId);
+  const revisionId = currentRevision?.id || data.revisionId || null;
+  const contentHash = data.contentHash || currentRevision?.contentHash || null;
+
   const sql = `
     INSERT INTO consent_records (
-      content_item_id, contact_id, status, method, evidence, notes, responded_at
+      content_item_id, contact_id, revision_id, consent_request_id, content_hash,
+      status, method, evidence, notes, responded_at
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
     ) RETURNING *
   `;
   const respondedAt = data.status === 'GRANTED' || data.status === 'REVOKED' ? new Date() : null;
   const res = await query(sql, [
     data.contentItemId,
     data.contactId,
+    revisionId,
+    data.consentRequestId || null,
+    contentHash,
     data.status,
     data.method,
     data.evidence || null,
@@ -358,8 +516,14 @@ export async function recordConsent(data: {
   // If consent is GRANTED, advance content item from PENDING_CONSENT to APPROVED if applicable
   if (data.status === 'GRANTED') {
     await query(
-      `UPDATE content_items SET status = 'APPROVED', updated_at = NOW() WHERE id = $1 AND status = 'PENDING_CONSENT'`,
-      [data.contentItemId]
+      `
+        UPDATE content_items
+        SET status = 'APPROVED',
+            approved_revision_id = COALESCE($2, approved_revision_id),
+            updated_at = NOW()
+        WHERE id = $1 AND status = 'PENDING_CONSENT'
+      `,
+      [data.contentItemId, revisionId]
     );
   } else if (data.status === 'PENDING') {
     await query(
@@ -370,6 +534,110 @@ export async function recordConsent(data: {
 
   const records = await getConsentRecords(data.contentItemId);
   return records[0];
+}
+
+export async function createConsentRequest(data: {
+  contentItemId: string;
+  revisionId: string;
+  contactId?: string | null;
+  recipientName?: string | null;
+  recipientEmail?: string | null;
+  tokenHash: string;
+  expiresAt: string;
+  createdBy?: string;
+}): Promise<ConsentRequest> {
+  const res = await query(
+    `
+      INSERT INTO consent_requests (
+        content_item_id, revision_id, contact_id, recipient_name, recipient_email,
+        token_hash, expires_at, created_by, status
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, 'PENDING'
+      )
+      RETURNING *
+    `,
+    [
+      data.contentItemId,
+      data.revisionId,
+      data.contactId || null,
+      data.recipientName || null,
+      data.recipientEmail || null,
+      data.tokenHash,
+      new Date(data.expiresAt),
+      data.createdBy || 'volta',
+    ]
+  );
+  await query(
+    `UPDATE content_items SET status = 'PENDING_CONSENT', updated_at = NOW() WHERE id = $1 AND status IN ('INBOX', 'DRAFT', 'APPROVED')`,
+    [data.contentItemId]
+  );
+  return mapConsentRequest(res.rows[0]);
+}
+
+export async function getConsentRequestByTokenHash(
+  tokenHash: string
+): Promise<ConsentRequest | null> {
+  const res = await query(`SELECT * FROM consent_requests WHERE token_hash = $1`, [
+    tokenHash,
+  ]);
+  return res.rows.length ? mapConsentRequest(res.rows[0]) : null;
+}
+
+export async function respondToConsentRequest(data: {
+  requestId: string;
+  status: 'APPROVED' | 'CHANGES_REQUESTED' | 'DECLINED' | 'EXPIRED';
+  responseNotes?: string | null;
+}): Promise<ConsentRequest | null> {
+  const res = await query(
+    `
+      UPDATE consent_requests
+      SET status = $2,
+          response_notes = $3,
+          responded_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `,
+    [data.requestId, data.status, data.responseNotes || null]
+  );
+  return res.rows.length ? mapConsentRequest(res.rows[0]) : null;
+}
+
+export async function getGrantedConsentForRevision(
+  revisionId: string
+): Promise<ConsentRecord | null> {
+  const records = await query(
+    `
+      SELECT cr.*, c.email AS contact_email, c.name AS contact_name
+      FROM consent_records cr
+      JOIN contacts c ON cr.contact_id = c.id
+      WHERE cr.revision_id = $1
+        AND cr.status = 'GRANTED'
+      ORDER BY cr.created_at DESC
+      LIMIT 1
+    `,
+    [revisionId]
+  );
+  if (records.rows.length === 0) return null;
+  const row = records.rows[0];
+  return {
+    id: row.id,
+    contentItemId: row.content_item_id,
+    revisionId: row.revision_id,
+    consentRequestId: row.consent_request_id,
+    contentHash: row.content_hash,
+    contactId: row.contact_id,
+    status: row.status as ConsentStatus,
+    method: row.method as ConsentMethod,
+    evidence: row.evidence,
+    notes: row.notes,
+    requestedAt: new Date(row.requested_at).toISOString(),
+    respondedAt: row.responded_at ? new Date(row.responded_at).toISOString() : null,
+    expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null,
+    createdAt: new Date(row.created_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString(),
+    contactEmail: row.contact_email,
+    contactName: row.contact_name,
+  };
 }
 
 // Contacts

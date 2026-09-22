@@ -16,6 +16,7 @@ import {
   getMailchimpReport,
   sendMailchimpCampaign,
 } from '@/lib/mailchimp';
+import { evaluateNewsletterPublicationEligibility } from './publication-eligibility-service';
 
 export async function createDispatchNewsletter(data: {
   slug: string;
@@ -50,6 +51,14 @@ export async function renderDispatchNewsletter(newsletterId: string) {
 }
 
 export async function pushDispatchNewsletterToMailchimp(newsletterId: string) {
+  const eligibility = await evaluateNewsletterPublicationEligibility(newsletterId);
+  if (!eligibility.eligible) {
+    return {
+      success: false as const,
+      error: `Newsletter contains ineligible content: ${eligibility.reasons.join(' ')}`,
+    };
+  }
+
   const rendered = await renderDispatchNewsletter(newsletterId);
   if (!rendered.success) {
     return rendered;
@@ -89,6 +98,14 @@ export async function sendDispatchNewsletter(newsletterId: string) {
 
   if (newsletter.status === 'SENT') {
     return { success: false as const, error: 'Campaign has already been sent.' };
+  }
+
+  const eligibility = await evaluateNewsletterPublicationEligibility(newsletterId);
+  if (!eligibility.eligible) {
+    return {
+      success: false as const,
+      error: `Newsletter contains ineligible content: ${eligibility.reasons.join(' ')}`,
+    };
   }
 
   let campaignId = newsletter.mailchimpCampaignId;

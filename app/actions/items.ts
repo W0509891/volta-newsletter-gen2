@@ -11,6 +11,10 @@ import {
 } from '@/lib/services/content-service';
 import { recordContentConsent } from '@/lib/services/consent-service';
 import {
+  createPreviewConsentRequest,
+  submitConsentPreviewResponse,
+} from '@/lib/services/consent-service';
+import {
   ContentItemStatus,
   ContentItemType,
   ConsentStatus,
@@ -106,6 +110,37 @@ export async function recordConsentAction(data: {
   revalidatePath('/admin');
   revalidatePath(`/admin/items/${data.contentItemId}`);
   return { success: true };
+}
+
+export async function createConsentRequestAction(data: {
+  contentItemId: string;
+  contactId?: string | null;
+  recipientName?: string | null;
+  recipientEmail?: string | null;
+}) {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    'http://localhost:3000';
+  const result = await createPreviewConsentRequest({
+    contentItemId: data.contentItemId,
+    contactId: data.contactId,
+    recipientName: data.recipientName,
+    recipientEmail: data.recipientEmail,
+    baseUrl,
+  });
+
+  revalidatePath('/admin');
+  revalidatePath(`/admin/items/${data.contentItemId}`);
+  return { success: true as const, approvalUrl: result.approvalUrl };
+}
+
+export async function submitConsentPreviewResponseAction(data: {
+  token: string;
+  response: 'APPROVED' | 'CHANGES_REQUESTED' | 'DECLINED';
+  notes?: string | null;
+}) {
+  return submitConsentPreviewResponse(data);
 }
 
 export async function attachItemToNewsletterAction(

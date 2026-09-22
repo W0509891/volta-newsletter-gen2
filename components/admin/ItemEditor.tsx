@@ -15,6 +15,7 @@ import {
   Newsletter,
 } from '@/lib/types';
 import {
+  createConsentRequestAction,
   saveItemDetailsAction,
   transitionItemStatusAction,
   recordConsentAction,
@@ -85,6 +86,7 @@ export function ItemEditor({
   const [consentMethod, setConsentMethod] = useState<ConsentMethod>('EMAIL');
   const [consentEvidence, setConsentEvidence] = useState('');
   const [consentNotes, setConsentNotes] = useState('');
+  const [approvalUrl, setApprovalUrl] = useState('');
 
   // Attach modal
   const [isAttachOpen, setIsAttachOpen] = useState(false);
@@ -166,6 +168,32 @@ export function ItemEditor({
       setShowConsentModal(false);
       setConsentEvidence('');
       setConsentNotes('');
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleCreateApprovalLink() {
+    const effectiveContact = contacts.find((contact) => contact.id === contactId) || contacts[0];
+    if (!effectiveContact) {
+      alert('Please select or add a Contact first to create an approval link.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const result = await createConsentRequestAction({
+        contentItemId: item.id,
+        contactId: effectiveContact.id,
+        recipientName: effectiveContact.name,
+        recipientEmail: effectiveContact.email,
+      });
+      if (result.success) {
+        setApprovalUrl(result.approvalUrl);
+      }
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -471,6 +499,24 @@ export function ItemEditor({
                 <span>Log Consent</span>
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={handleCreateApprovalLink}
+              disabled={isSaving}
+              className="w-full rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-left text-xs font-medium text-amber-200 hover:bg-amber-500/20 disabled:opacity-50"
+            >
+              Create Approval Link
+            </button>
+
+            {approvalUrl && (
+              <input
+                readOnly
+                value={approvalUrl}
+                onFocus={(event) => event.currentTarget.select()}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-slate-200"
+              />
+            )}
 
             {consentRecords.length === 0 ? (
               <p className="text-xs text-slate-400 py-3 text-center border border-dashed border-slate-800 rounded-lg">

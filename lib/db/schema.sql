@@ -38,16 +38,41 @@ CREATE TABLE IF NOT EXISTS content_items (
   rejection_reason TEXT,
   contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
   event_id UUID REFERENCES events(id) ON DELETE SET NULL,
+  current_revision_id UUID,
+  approved_revision_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS content_revisions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  content_item_id UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+  revision_number INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  summary TEXT,
+  body TEXT,
+  url TEXT,
+  media JSONB NOT NULL DEFAULT '{}'::jsonb,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  content_hash TEXT NOT NULL,
+  created_by TEXT NOT NULL DEFAULT 'system',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (content_item_id, revision_number)
+);
+
+ALTER TABLE content_items
+  ADD COLUMN IF NOT EXISTS current_revision_id UUID REFERENCES content_revisions(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS approved_revision_id UUID REFERENCES content_revisions(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS consent_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   content_item_id UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
   contact_id UUID NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+  revision_id UUID REFERENCES content_revisions(id) ON DELETE SET NULL,
+  consent_request_id UUID,
+  content_hash TEXT,
   status VARCHAR(32) NOT NULL DEFAULT 'PENDING', -- PENDING, GRANTED, REVOKED, EXPIRED
-  method VARCHAR(32) NOT NULL DEFAULT 'EMAIL', -- EMAIL, VERBAL, FORM, RECORDING
+  method VARCHAR(32) NOT NULL DEFAULT 'EMAIL', -- EMAIL, VERBAL, FORM, RECORDING, PREVIEW_LINK
   evidence TEXT,
   notes TEXT,
   requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -55,6 +80,22 @@ CREATE TABLE IF NOT EXISTS consent_records (
   expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS consent_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  content_item_id UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+  revision_id UUID NOT NULL REFERENCES content_revisions(id) ON DELETE CASCADE,
+  contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
+  recipient_name TEXT,
+  recipient_email TEXT,
+  token_hash TEXT UNIQUE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'PENDING',
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_by TEXT NOT NULL DEFAULT 'volta',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  responded_at TIMESTAMPTZ,
+  response_notes TEXT
 );
 
 CREATE TABLE IF NOT EXISTS founder_submissions (
@@ -118,10 +159,40 @@ CREATE TABLE IF NOT EXISTS tracked_links (
 CREATE INDEX IF NOT EXISTS idx_content_items_status ON content_items(status);
 CREATE INDEX IF NOT EXISTS idx_content_items_type ON content_items(type);
 CREATE INDEX IF NOT EXISTS idx_content_items_revisit_at ON content_items(revisit_at);
+CREATE INDEX IF NOT EXISTS idx_content_revisions_content_item ON content_revisions(content_item_id);
+CREATE INDEX IF NOT EXISTS idx_content_items_current_revision ON content_items(current_revision_id);
 CREATE INDEX IF NOT EXISTS idx_consent_records_content_item ON consent_records(content_item_id);
+CREATE INDEX IF NOT EXISTS idx_consent_records_revision ON consent_records(revision_id);
 CREATE INDEX IF NOT EXISTS idx_consent_records_contact ON consent_records(contact_id);
+CREATE INDEX IF NOT EXISTS idx_consent_requests_revision ON consent_requests(revision_id);
+CREATE INDEX IF NOT EXISTS idx_consent_requests_token_hash ON consent_requests(token_hash);
 CREATE INDEX IF NOT EXISTS idx_founder_submissions_status ON founder_submissions(status);
 CREATE INDEX IF NOT EXISTS idx_founder_submissions_created_at ON founder_submissions(created_at);
 CREATE INDEX IF NOT EXISTS idx_newsletters_slug ON newsletters(slug);
 CREATE INDEX IF NOT EXISTS idx_newsletter_items_newsletter ON newsletter_items(newsletter_id);
 CREATE INDEX IF NOT EXISTS idx_tracked_links_newsletter ON tracked_links(newsletter_id);
+
+INSERT INTO content_revisions (
+  content_item_id, revision_number, title, summary, body, url, content_hash, created_by, created_at
+)
+SELECT
+  ci.id,
+  1,
+  ci.title,
+  ci.summary,
+  ci.body,
+  ci.url,
+  md5(concat_ws('::', ci.title, COALESCE(ci.summary, ''), COALESCE(ci.body, ''), COALESCE(ci.url, ''))),
+  'migration',
+  ci.created_at
+FROM content_items ci
+WHERE NOT EXISTS (
+  SELECT 1 FROM content_revisions cr WHERE cr.content_item_id = ci.id
+);
+
+UPDATE content_items ci
+SET current_revision_id = cr.id
+FROM content_revisions cr
+WHERE cr.content_item_id = ci.id
+  AND cr.revision_number = 1
+  AND ci.current_revision_id IS NULL;

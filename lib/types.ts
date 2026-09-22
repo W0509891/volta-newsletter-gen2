@@ -21,7 +21,14 @@ export type NewsletterSection =
 
 export type ConsentStatus = 'PENDING' | 'GRANTED' | 'REVOKED' | 'EXPIRED';
 
-export type ConsentMethod = 'EMAIL' | 'VERBAL' | 'FORM' | 'RECORDING';
+export type ConsentMethod = 'EMAIL' | 'VERBAL' | 'FORM' | 'RECORDING' | 'PREVIEW_LINK';
+export type ConsentRequestStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'CHANGES_REQUESTED'
+  | 'DECLINED'
+  | 'REVOKED'
+  | 'EXPIRED';
 
 export type FounderSubmissionType =
   | 'FEATURED'
@@ -62,6 +69,8 @@ export interface Contact {
 
 export interface ContentItem {
   id: string;
+  currentRevisionId?: string | null;
+  approvedRevisionId?: string | null;
   type: ContentItemType;
   title: string;
   body?: string | null;
@@ -86,9 +95,40 @@ export interface ContentItem {
   consentEvidence?: string | null;
 }
 
+export interface ContentRevision {
+  id: string;
+  contentItemId: string;
+  revisionNumber: number;
+  title: string;
+  summary?: string | null;
+  body?: string | null;
+  url?: string | null;
+  contentHash: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface ConsentRequest {
+  id: string;
+  contentItemId: string;
+  revisionId: string;
+  contactId?: string | null;
+  recipientName?: string | null;
+  recipientEmail?: string | null;
+  status: ConsentRequestStatus;
+  expiresAt: string;
+  createdBy: string;
+  createdAt: string;
+  respondedAt?: string | null;
+  responseNotes?: string | null;
+}
+
 export interface ConsentRecord {
   id: string;
   contentItemId: string;
+  revisionId?: string | null;
+  consentRequestId?: string | null;
+  contentHash?: string | null;
   contactId: string;
   status: ConsentStatus;
   method: ConsentMethod;
