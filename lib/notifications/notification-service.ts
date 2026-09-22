@@ -9,6 +9,7 @@ import {
 } from '@/lib/types';
 import { sendDiscordDigest } from './discord';
 import { sendSlackDigest } from './slack';
+import { auditAgentAction } from '@/lib/services/audit-service';
 
 export async function buildNewsDigest(data: {
   channel: NewsDeliveryChannel;
@@ -61,6 +62,17 @@ export async function sendNewsDigest(data: {
       })
     );
   }
+  await auditAgentAction({
+    actor: 'VOLTA_MCP',
+    action: 'delivery.send_digest',
+    subjectType: 'news_digest',
+    metadata: {
+      channel: digest.channel,
+      deliveryType: digest.deliveryType,
+      delivered: deliveries.length,
+      reference: result.reference,
+    },
+  });
 
   return {
     success: true as const,

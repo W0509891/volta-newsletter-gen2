@@ -15,6 +15,7 @@ import {
   NewsletterItem,
   TrackedLink,
   Contact,
+  AuditLog,
   ContentRevision,
   Event,
   FounderSubmission,
@@ -213,6 +214,21 @@ function mapNewsDeliveryRecord(row: any): NewsDeliveryRecord {
     deliveryType: row.delivery_type as NewsDeliveryType,
     deliveredAt: new Date(row.delivered_at).toISOString(),
     deliveryReference: row.delivery_reference,
+  };
+}
+
+function mapAuditLog(row: any): AuditLog {
+  return {
+    id: row.id,
+    actor: row.actor,
+    action: row.action,
+    subjectType: row.subject_type,
+    subjectId: row.subject_id,
+    metadata:
+      row.metadata && typeof row.metadata === 'object'
+        ? (row.metadata as Record<string, unknown>)
+        : {},
+    createdAt: new Date(row.created_at).toISOString(),
   };
 }
 
@@ -1330,4 +1346,28 @@ export async function recordNewsDelivery(data: {
   );
   await updateNewsCandidateStatus(data.candidateId, 'SURFACED');
   return mapNewsDeliveryRecord(res.rows[0]);
+}
+
+export async function createAuditLog(data: {
+  actor: string;
+  action: string;
+  subjectType?: string | null;
+  subjectId?: string | null;
+  metadata?: Record<string, unknown>;
+}): Promise<AuditLog> {
+  const res = await query(
+    `
+      INSERT INTO audit_logs (actor, action, subject_type, subject_id, metadata)
+      VALUES ($1, $2, $3, $4, $5::jsonb)
+      RETURNING *
+    `,
+    [
+      data.actor,
+      data.action,
+      data.subjectType || null,
+      data.subjectId || null,
+      JSON.stringify(data.metadata || {}),
+    ]
+  );
+  return mapAuditLog(res.rows[0]);
 }

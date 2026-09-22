@@ -3,6 +3,7 @@ import {
   FounderSubmissionEvent,
   FounderSubmissionType,
 } from '@/lib/types';
+import { auditAgentAction } from './audit-service';
 
 const MAX_TITLE_LENGTH = 180;
 const MAX_SUMMARY_LENGTH = 600;
@@ -60,6 +61,16 @@ export async function submitFounderContent(
     mediaUrls: cleanUrlList(input.mediaUrls),
     event: input.event,
     notes: cleanText(input.notes, MAX_NOTES_LENGTH),
+  });
+  await auditAgentAction({
+    actor: 'FOUNDER_MCP',
+    action: 'submission.create',
+    subjectType: 'founder_submission',
+    subjectId: submission.id,
+    metadata: {
+      type: submission.type,
+      companyName: submission.companyName,
+    },
   });
 
   return {

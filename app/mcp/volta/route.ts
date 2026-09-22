@@ -1,5 +1,6 @@
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { checkRateLimit } from '@/lib/security/rate-limit';
+import { validateSecret } from '@/lib/security/env';
 import { createVoltaMcpServer } from '@/mcp/volta/server';
 
 export const runtime = 'nodejs';
@@ -21,8 +22,9 @@ function unauthorized(status: number, message: string) {
 
 function assertAuthorized(request: Request) {
   const token = process.env.VOLTA_MCP_TOKEN;
-  if (!token) {
-    return unauthorized(503, 'VOLTA_MCP_TOKEN is not configured.');
+  const validation = validateSecret('VOLTA_MCP_TOKEN', token);
+  if (!validation.valid) {
+    return unauthorized(503, validation.error || 'VOLTA_MCP_TOKEN is invalid.');
   }
 
   const authorization = request.headers.get('authorization') || '';

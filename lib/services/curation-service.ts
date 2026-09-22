@@ -5,6 +5,7 @@ import {
 } from '@/lib/db/queries';
 import { createContentItemFromIntake } from './content-service';
 import { ContentItemType } from '@/lib/types';
+import { auditAgentAction } from './audit-service';
 
 function mapSubmissionTypeToContentType(type: string): ContentItemType {
   if (type === 'EVENTS') return 'EVENT';
@@ -41,6 +42,13 @@ export async function promoteFounderSubmission(id: string) {
   });
 
   await updateFounderSubmissionStatus(id, 'PROMOTED', item.id);
+  await auditAgentAction({
+    actor: 'VOLTA_MCP',
+    action: 'submission.promote',
+    subjectType: 'founder_submission',
+    subjectId: id,
+    metadata: { contentItemId: item.id },
+  });
   return { success: true as const, item };
 }
 
@@ -49,5 +57,11 @@ export async function rejectFounderSubmission(id: string) {
   if (!submission) {
     return { success: false as const, error: 'Submission not found' };
   }
+  await auditAgentAction({
+    actor: 'VOLTA_MCP',
+    action: 'submission.reject',
+    subjectType: 'founder_submission',
+    subjectId: id,
+  });
   return { success: true as const, submission };
 }

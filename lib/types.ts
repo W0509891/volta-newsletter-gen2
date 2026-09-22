@@ -271,3 +271,13 @@ export interface NewsDeliveryRecord {
   deliveredAt: string;
   deliveryReference?: string | null;
 }
+
+export interface AuditLog {
+  id: string;
+  actor: string;
+  action: string;
+  subjectType?: string | null;
+  subjectId?: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}

@@ -8,6 +8,7 @@ import {
 import { aggregateNewsSources } from '@/lib/news/aggregator';
 import { NewsCandidateStatus, NewsSourceType } from '@/lib/types';
 import { createContentItemFromIntake } from './content-service';
+import { auditAgentAction } from './audit-service';
 
 export async function addNewsSource(data: {
   name: string;
@@ -63,5 +64,12 @@ export async function promoteNewsCandidate(id: string) {
   });
 
   await updateNewsCandidateStatus(id, 'PROMOTED', item.id);
+  await auditAgentAction({
+    actor: 'VOLTA_MCP',
+    action: 'news.promote',
+    subjectType: 'news_candidate',
+    subjectId: id,
+    metadata: { contentItemId: item.id },
+  });
   return { success: true as const, item };
 }
