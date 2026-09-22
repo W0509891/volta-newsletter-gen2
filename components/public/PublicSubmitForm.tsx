@@ -33,6 +33,7 @@ export function PublicSubmitForm() {
         status: 'INBOX',
         contactName: name.trim() || undefined,
         contactEmail: email.trim(),
+        contactOrganization: organization.trim() || undefined,
       });
 
       if (res.success && res.item && res.item.contactId) {

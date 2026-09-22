@@ -2,14 +2,14 @@
 
 import { revalidatePath } from 'next/cache';
 import {
-  getContentItemById,
-  updateContentItem,
-  createContentItem,
-  recordConsent,
-  attachItemToNewsletter,
-  detachItemFromNewsletter,
-  findOrCreateContact,
-} from '@/lib/db/queries';
+  attachContentItemToNewsletter,
+  batchTransitionContentItems,
+  createContentItemFromIntake,
+  detachContentItemFromNewsletter,
+  saveContentItemDetails,
+  transitionContentItemStatus,
+} from '@/lib/services/content-service';
+import { recordContentConsent } from '@/lib/services/consent-service';
 import {
   ContentItemStatus,
   ContentItemType,
@@ -26,10 +26,11 @@ export async function transitionItemStatusAction(
     revisitAt?: string;
   }
 ) {
-  await updateContentItem(id, {
+  await transitionContentItemStatus({
+    id,
     status: newStatus,
-    rejectionReason: options?.rejectionReason || null,
-    revisitAt: options?.revisitAt || null,
+    rejectionReason: options?.rejectionReason,
+    revisitAt: options?.revisitAt,
   });
 
   revalidatePath('/admin');
@@ -46,27 +47,11 @@ export async function batchUpdateItemsAction(
     rejectionReason?: string;
   }
 ) {
-  for (const id of ids) {
-    if (action === 'APPROVE') {
-      await updateContentItem(id, { status: 'APPROVED' });
-    } else if (action === 'BACKLOG') {
-      await updateContentItem(id, {
-        status: 'BACKLOG',
-        revisitAt: options?.revisitAt || null,
-      });
-    } else if (action === 'REJECT') {
-      await updateContentItem(id, {
-        status: 'REJECTED',
-        rejectionReason: options?.rejectionReason || null,
-      });
-    } else if (action === 'ARCHIVE') {
-      await updateContentItem(id, { status: 'ARCHIVED' });
-    }
-  }
+  const result = await batchTransitionContentItems(ids, action, options);
 
   revalidatePath('/admin');
   revalidatePath('/admin/backlog');
-  return { success: true, count: ids.length };
+  return { success: true, count: result.count };
 }
 
 export async function saveItemDetailsAction(
@@ -83,17 +68,7 @@ export async function saveItemDetailsAction(
     revisitAt?: string | null;
   }
 ) {
-  await updateContentItem(id, {
-    title: data.title,
-    type: data.type,
-    summary: data.summary,
-    body: data.body,
-    url: data.url || null,
-    featured: Boolean(data.featured),
-    contactId: data.contactId || null,
-    eventId: data.eventId || null,
-    revisitAt: data.revisitAt || null,
-  });
+  await saveContentItemDetails(id, data);
 
   revalidatePath('/admin');
   revalidatePath('/admin/backlog');
@@ -110,25 +85,9 @@ export async function createNewItemAction(data: {
   status?: ContentItemStatus;
   contactEmail?: string;
   contactName?: string;
+  contactOrganization?: string;
 }) {
-  let contactId: string | null = null;
-  if (data.contactEmail && data.contactEmail.trim()) {
-    const contact = await findOrCreateContact(
-      data.contactEmail.trim(),
-      data.contactName?.trim() || null
-    );
-    contactId = contact.id;
-  }
-
-  const item = await createContentItem({
-    title: data.title,
-    type: data.type,
-    summary: data.summary,
-    body: data.body,
-    url: data.url || null,
-    status: data.status || 'INBOX',
-    contactId,
-  });
+  const item = await createContentItemFromIntake(data);
 
   revalidatePath('/admin');
   return { success: true, item };
@@ -142,14 +101,7 @@ export async function recordConsentAction(data: {
   evidence?: string;
   notes?: string;
 }) {
-  await recordConsent({
-    contentItemId: data.contentItemId,
-    contactId: data.contactId,
-    status: data.status,
-    method: data.method,
-    evidence: data.evidence || null,
-    notes: data.notes || null,
-  });
+  await recordContentConsent(data);
 
   revalidatePath('/admin');
   revalidatePath(`/admin/items/${data.contentItemId}`);
@@ -162,7 +114,7 @@ export async function attachItemToNewsletterAction(
   section: NewsletterSection,
   position: number = 0
 ) {
-  await attachItemToNewsletter(newsletterId, contentItemId, section, position);
+  await attachContentItemToNewsletter(newsletterId, contentItemId, section, position);
 
   revalidatePath('/admin');
   revalidatePath(`/admin/items/${contentItemId}`);
@@ -174,7 +126,7 @@ export async function detachItemFromNewsletterAction(
   newsletterId: string,
   contentItemId: string
 ) {
-  await detachItemFromNewsletter(newsletterId, contentItemId);
+  await detachContentItemFromNewsletter(newsletterId, contentItemId);
 
   revalidatePath('/admin');
   revalidatePath(`/admin/items/${contentItemId}`);
