@@ -26,6 +26,16 @@ import {
   promoteFounderSubmission,
   rejectFounderSubmission,
 } from '@/lib/services/curation-service';
+import {
+  addNewsSource,
+  checkNewsSourcesNow,
+  dismissNewsCandidate,
+  getNewsCandidate,
+  listNewsSources,
+  promoteNewsCandidate,
+  saveNewsCandidate,
+  searchNewsCandidates,
+} from '@/lib/services/news-service';
 
 function jsonResult(value: Record<string, unknown>) {
   return {
@@ -52,6 +62,15 @@ const newsletterSectionSchema = z.enum([
   'OPPORTUNITIES',
   'COMMUNITY',
 ]);
+const newsStatusSchema = z.enum(['NEW', 'SURFACED', 'SAVED', 'DISMISSED', 'PROMOTED']);
+const newsSourceTypeSchema = z.enum([
+  'RSS',
+  'WEBSITE',
+  'LINKEDIN_PAGE',
+  'LINKEDIN_PROFILE',
+  'MANUAL',
+  'API',
+]);
 
 const voltaSkills = [
   {
@@ -75,6 +94,7 @@ const voltaSkills = [
       'newsletter.render',
       'newsletter.sync_mailchimp',
       'newsletter.send',
+      'news.search',
     ],
     instructions:
       'Use approved or consent-ready content. The sync and send tools enforce publication eligibility server-side.',
@@ -232,6 +252,88 @@ export function createVoltaMcpServer() {
       inputSchema: { id: z.string().uuid() },
     },
     async ({ id }) => jsonResult(await rejectFounderSubmission(id))
+  );
+
+  server.registerTool(
+    'news.search',
+    {
+      description: 'Search reviewable news candidates.',
+      inputSchema: {
+        status: newsStatusSchema.optional(),
+        search: z.string().trim().max(200).optional(),
+      },
+    },
+    async (input) => jsonResult({ candidates: await searchNewsCandidates(input) })
+  );
+
+  server.registerTool(
+    'news.get',
+    {
+      description: 'Get a news candidate by ID.',
+      inputSchema: { id: z.string().uuid() },
+    },
+    async ({ id }) => jsonResult({ candidate: await getNewsCandidate(id) })
+  );
+
+  server.registerTool(
+    'news.promote',
+    {
+      description: 'Promote a news candidate into draft editorial content.',
+      inputSchema: { id: z.string().uuid() },
+    },
+    async ({ id }) => jsonResult(await promoteNewsCandidate(id))
+  );
+
+  server.registerTool(
+    'news.save',
+    {
+      description: 'Save a news candidate for later review.',
+      inputSchema: { id: z.string().uuid() },
+    },
+    async ({ id }) => jsonResult({ candidate: await saveNewsCandidate(id) })
+  );
+
+  server.registerTool(
+    'news.dismiss',
+    {
+      description: 'Dismiss a news candidate.',
+      inputSchema: { id: z.string().uuid() },
+    },
+    async ({ id }) => jsonResult({ candidate: await dismissNewsCandidate(id) })
+  );
+
+  server.registerTool(
+    'source.list',
+    {
+      description: 'List configured news sources.',
+      inputSchema: { enabled: z.boolean().optional() },
+    },
+    async (input) => jsonResult({ sources: await listNewsSources(input) })
+  );
+
+  server.registerTool(
+    'source.add',
+    {
+      description: 'Add a dynamic news source.',
+      inputSchema: {
+        name: z.string().trim().min(1).max(180),
+        type: newsSourceTypeSchema,
+        url: z.url(),
+        enabled: z.boolean().optional(),
+        pollingIntervalMinutes: z.number().int().min(5).max(10080).optional(),
+        priority: z.number().int().min(-100).max(100).optional(),
+      },
+    },
+    async (input) => jsonResult({ source: await addNewsSource(input) })
+  );
+
+  server.registerTool(
+    'source.check_now',
+    {
+      description: 'Run news aggregation for all enabled sources now.',
+      inputSchema: {},
+    },
+    async () => jsonResult(await checkNewsSourcesNow())
   );
 
   server.registerTool(
