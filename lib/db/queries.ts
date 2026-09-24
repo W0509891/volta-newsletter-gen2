@@ -901,32 +901,39 @@ export async function getNewsletterItemsWithContent(
   newsletterId: string
 ): Promise<NewsletterItemWithContent[]> {
   const sql = `
-    SELECT 
+    SELECT
       ni.newsletter_id,
       ni.content_item_id,
       ni.section,
       ni.position,
       ci.*,
-      c.name AS contact_name,
-      c.email AS contact_email,
-      e.title AS event_title,
-      cr.id AS consent_id,
-      cr.status AS consent_status,
-      cr.method AS consent_method,
-      cr.evidence AS consent_evidence,
+      c.name        AS contact_name,
+      c.email       AS contact_email,
+      e.title       AS event_title,
+      cr.id         AS consent_id,
+      cr.status     AS consent_status,
+      cr.method     AS consent_method,
+      cr.evidence   AS consent_evidence,
       tl.destination_url AS tracked_url
     FROM newsletter_items ni
-    JOIN content_items ci ON ni.content_item_id = ci.id
-    LEFT JOIN contacts c ON ci.contact_id = c.id
-    LEFT JOIN events e ON ci.event_id = e.id
-    LEFT JOIN LATERAL (
-      SELECT id, status, method, evidence 
-      FROM consent_records 
-      WHERE content_item_id = ci.id 
-      ORDER BY created_at DESC 
+           JOIN content_items ci ON ni.content_item_id = ci.id
+           LEFT JOIN contacts c  ON ci.contact_id = c.id
+           LEFT JOIN events e    ON ci.event_id = e.id
+           LEFT JOIN LATERAL (
+      SELECT id, status, method, evidence
+      FROM consent_records
+      WHERE content_item_id = ci.id
+      ORDER BY created_at DESC
+        LIMIT 1
+) cr ON true
+      LEFT JOIN LATERAL (
+      SELECT destination_url
+      FROM tracked_links
+      WHERE newsletter_id = ni.newsletter_id
+      AND content_item_id = ni.content_item_id
+      ORDER BY created_at DESC
       LIMIT 1
-    ) cr ON true
-    LEFT JOIN tracked_links tl ON tl.newsletter_id = ni.newsletter_id AND tl.content_item_id = ni.content_item_id
+      ) tl ON true
     WHERE ni.newsletter_id = $1
     ORDER BY ni.section ASC, ni.position ASC, ci.created_at ASC
   `;

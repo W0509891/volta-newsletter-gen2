@@ -1,20 +1,30 @@
 import mailchimp from '@mailchimp/mailchimp_marketing';
 
 const apiKey = process.env.MAILCHIMP_API_KEY || '';
+const accessToken = process.env.MAILCHIMP_ACCESS_TOKEN || '';
 const server = process.env.MAILCHIMP_SERVER_PREFIX || 'us1';
 const listId = process.env.MAILCHIMP_LIST_ID || '';
 const fromName = process.env.MAILCHIMP_FROM_NAME || 'Volta Innovation Hub';
 const replyTo = process.env.MAILCHIMP_REPLY_TO || 'newsletter@voltaeffect.com';
 
-const isConfigured = Boolean(apiKey && apiKey !== 'mock-key-for-demo' && apiKey.includes('-'));
+const hasApiKey = Boolean(apiKey && apiKey !== 'mock-key-for-demo' && apiKey.includes('-'));
+const hasAccessToken = Boolean(accessToken && accessToken !== 'mock-access-token-for-demo');
+const isConfigured = Boolean((hasApiKey || hasAccessToken) && server && listId && listId !== 'mock-list-id');
 
 const client = mailchimp as any;
 
 if (isConfigured) {
-  client.setConfig({
-    apiKey,
-    server,
-  });
+  client.setConfig(
+    hasAccessToken
+      ? {
+          accessToken,
+          server,
+        }
+      : {
+          apiKey,
+          server,
+        }
+  );
 }
 
 export interface CreateCampaignParams {

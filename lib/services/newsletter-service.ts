@@ -33,6 +33,7 @@ export async function createDispatchNewsletter(data: {
 }
 
 export async function renderDispatchNewsletter(newsletterId: string) {
+  console.log('Rendering newsletter', newsletterId);
   const newsletter = await getNewsletterById(newsletterId);
   if (!newsletter) {
     return { success: false as const, error: 'Newsletter not found' };
