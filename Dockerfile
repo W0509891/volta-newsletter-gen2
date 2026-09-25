@@ -6,7 +6,7 @@ RUN apk add --no-cache git
 RUN apk add --no-cache python3 py3-pip
 
 COPY package.json package-lock.json ./
-RUN npm i --omit=dev
+RUN npm i
 
 COPY .next-prod/ ./.next-prod/
 COPY next.config.* ./
