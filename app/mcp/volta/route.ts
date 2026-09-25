@@ -2,6 +2,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { checkRateLimit } from '@/lib/security/rate-limit';
 import { validateSecret } from '@/lib/security/env';
 import { createVoltaMcpServer } from '@/mcp/volta/server';
+import { issuerFromRequest } from '@/lib/oauth/claude-mcp';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,8 +17,16 @@ function corsHeaders() {
   };
 }
 
-function unauthorized(status: number, message: string) {
-  return Response.json({ error: message }, { status, headers: corsHeaders() });
+function unauthorized(status: number, message: string, request?: Request) {
+  const headers = new Headers(corsHeaders());
+  if (status === 401 && request) {
+    headers.set(
+      'WWW-Authenticate',
+      `Bearer resource_metadata="${issuerFromRequest(request)}/.well-known/oauth-protected-resource/mcp/volta"`
+    );
+  }
+
+  return Response.json({ error: message }, { status, headers });
 }
 
 function assertAuthorized(request: Request) {
@@ -29,7 +38,7 @@ function assertAuthorized(request: Request) {
 
   const authorization = request.headers.get('authorization') || '';
   if (authorization !== `Bearer ${token}`) {
-    return unauthorized(401, 'Unauthorized Volta MCP request.');
+    return unauthorized(401, 'Unauthorized Volta MCP request.', request);
   }
 
   return null;

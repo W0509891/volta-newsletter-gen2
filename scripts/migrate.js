@@ -1,6 +1,7 @@
-const fs = require('fs');
-const path = require('path');
-const { Client } = require('pg');
+import path from "path";
+import fs from "fs";
+import {Client} from "pg";
+
 
 async function migrate() {
   const sql = fs.readFileSync(path.join(process.cwd(), 'lib/db/schema.sql'), 'utf8');

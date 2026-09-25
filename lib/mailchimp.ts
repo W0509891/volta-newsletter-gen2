@@ -1,29 +1,23 @@
 import mailchimp from '@mailchimp/mailchimp_marketing';
+import {writeFile} from "node:fs";
 
 const apiKey = process.env.MAILCHIMP_API_KEY || '';
-const accessToken = process.env.MAILCHIMP_ACCESS_TOKEN || '';
 const server = process.env.MAILCHIMP_SERVER_PREFIX || 'us1';
 const listId = process.env.MAILCHIMP_LIST_ID || '';
 const fromName = process.env.MAILCHIMP_FROM_NAME || 'Volta Innovation Hub';
 const replyTo = process.env.MAILCHIMP_REPLY_TO || 'newsletter@voltaeffect.com';
 
 const hasApiKey = Boolean(apiKey && apiKey !== 'mock-key-for-demo' && apiKey.includes('-'));
-const hasAccessToken = Boolean(accessToken && accessToken !== 'mock-access-token-for-demo');
-const isConfigured = Boolean((hasApiKey || hasAccessToken) && server && listId && listId !== 'mock-list-id');
+const isConfigured = Boolean((hasApiKey) && server && listId && listId !== 'mock-list-id');
 
 const client = mailchimp as any;
 
 if (isConfigured) {
   client.setConfig(
-    hasAccessToken
-      ? {
-          accessToken,
-          server,
-        }
-      : {
+   {
           apiKey,
           server,
-        }
+    }
   );
 }
 
@@ -43,6 +37,7 @@ export async function createOrUpdateMailchimpCampaign(
   archiveUrl: string;
 }> {
   if (!isConfigured) {
+    console.log('Mailchimp not configured, using mock data');
     // Demo / mock mode fallback
     const mockId = existingCampaignId || `mc_mock_${Math.random().toString(36).substring(2, 9)}`;
     const mockWebId = `web_${mockId}`;
@@ -57,6 +52,8 @@ export async function createOrUpdateMailchimpCampaign(
   let campaignId = existingCampaignId;
 
   if (!campaignId) {
+    try {
+
     const response: any = await client.campaigns.create({
       type: 'regular',
       recipients: {
@@ -72,6 +69,13 @@ export async function createOrUpdateMailchimpCampaign(
     });
 
     campaignId = response.id;
+    }
+    catch (e) {
+      console.error('Error creating Mailchimp campaign:',e)
+      writeFile("err.json", JSON.stringify(e, null, 2), (err) => {
+        console.error('Error writing error to file:', err);
+      });
+    }
   }
 
   await client.campaigns.setContent(campaignId, {
