@@ -11,6 +11,7 @@ RUN npm i
 COPY .next-prod/ ./.next-prod/
 COPY next.config.* ./
 COPY public/ ./public/
+COPY templates ./templates/
 
 run ls -al
 
