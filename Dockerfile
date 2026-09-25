@@ -3,16 +3,18 @@ LABEL authors="lemema"
 
 WORKDIR /app
 RUN apk add --no-cache git
+RUN apk add --no-cache python3 py3-pip
 
-COPY . .
+COPY package.json package-lock.json ./
+RUN npm i --omit=dev
+
+COPY .next-prod/ ./.next-prod/
+COPY next.config.* ./
+COPY public/ ./public/
 
 run ls -al
 
-RUN npm i
-run npm run build
+RUN #npm i
+run #npm run build
 
 ENTRYPOINT ["npm" , "run", "start"]
-
-#CMD ["yarn", "run", "start-app"]
-
-#EXPOSE 3000

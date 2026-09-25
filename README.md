@@ -233,12 +233,15 @@ Configure your environment variables in `.env`:
 DATABASE_URL=postgresql://user:password@hostname:5432/volta_email_2
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# Mailchimp API (Leave mock keys for local development)
+# Mailchimp API (use either MAILCHIMP_API_KEY or MAILCHIMP_ACCESS_TOKEN)
+MAILCHIMP_CLIENT_ID=
+MAILCHIMP_CLIENT_SECRET=
 MAILCHIMP_API_KEY=mock-key-for-demo
+MAILCHIMP_ACCESS_TOKEN=
 MAILCHIMP_SERVER_PREFIX=us1
 MAILCHIMP_LIST_ID=mock-list-id
-MAILCHIMP_FROM_NAME="Volta Innovation Hub"
-MAILCHIMP_REPLY_TO="newsletter@voltaeffect.com"
+MAILCHIMP_FROM_NAME=
+MAILCHIMP_REPLY_TO=
 ```
 
 ### Database Migration & Seeding

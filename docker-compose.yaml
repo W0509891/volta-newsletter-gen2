@@ -13,7 +13,7 @@ services:
       dkr-ntw-apps:
         ipv4_address: 172.20.0.2
     env_file:
-      - .env
+      - .env.production
     volumes:
       - dkr-vlm-volta_news_letter:/volta-newsletter-server
 
