@@ -1,9 +1,11 @@
 import { AdminNavbar } from '@/components/admin/Navbar';
 import { QuickCaptureForm } from '@/components/admin/QuickCaptureForm';
+import { requireAdminPage } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
-export default function QuickCapturePage() {
+export default async function QuickCapturePage() {
+  await requireAdminPage();
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <AdminNavbar currentPath="/admin" />

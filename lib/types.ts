@@ -99,6 +99,7 @@ export interface ContentItem {
   // Joined fields for display
   contactName?: string | null;
   contactEmail?: string | null;
+  contactOrganization?: string | null;
   eventTitle?: string | null;
   consentStatus?: ConsentStatus | null;
   consentId?: string | null;
@@ -280,4 +281,22 @@ export interface AuditLog {
   subjectId?: string | null;
   metadata: Record<string, unknown>;
   createdAt: string;
+}
+
+export interface Migration {
+  id: string;
+  migrationFileName: string;
+  migrationSql: string;
+  createdAt: string;
+  date_applied: string;
+}
+
+export interface DoNotFeature {
+  id: string;
+  name: string;
+  requestedAt: string;
+  note?: string | null;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

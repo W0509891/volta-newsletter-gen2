@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { requireAdmin } from '@/lib/auth/session';
 import {
   createDispatchNewsletter,
   pushDispatchNewsletterToMailchimp,
@@ -18,6 +19,7 @@ export async function createNewNewsletterAction(data: {
   previewText?: string;
   scheduledFor?: string;
 }) {
+  await requireAdmin();
   const newsletter = await createDispatchNewsletter(data);
 
   revalidatePath('/admin/newsletters');
@@ -25,6 +27,7 @@ export async function createNewNewsletterAction(data: {
 }
 
 export async function pushToMailchimpAction(newsletterId: string) {
+  await requireAdmin();
   try {
     const result = await pushDispatchNewsletterToMailchimp(newsletterId);
     if (!result.success) {
@@ -49,6 +52,7 @@ export async function pushToMailchimpAction(newsletterId: string) {
 }
 
 export async function sendMailchimpCampaignAction(newsletterId: string) {
+  await requireAdmin();
   try {
     const result = await sendDispatchNewsletter(newsletterId);
     if (!result.success) {
@@ -70,6 +74,7 @@ export async function sendMailchimpCampaignAction(newsletterId: string) {
 }
 
 export async function syncMailchimpReportsAction(newsletterId: string) {
+  await requireAdmin();
   try {
     const result = await syncDispatchNewsletterReports(newsletterId);
     if (!result.success) {

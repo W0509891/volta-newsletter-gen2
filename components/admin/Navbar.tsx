@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getOverdueBacklogCount } from '@/lib/db/queries';
-import { Mail, Inbox, Clock, Send, PlusCircle, BarChart3, AlertCircle, Zap } from 'lucide-react';
+import { Mail, Inbox, Clock, Send, PlusCircle, BarChart3, AlertCircle, Zap, LogOut } from 'lucide-react';
+import { logoutAction } from '@/app/actions/auth';
 
 export async function AdminNavbar({ currentPath }: { currentPath?: string }) {
   const overdueCount = await getOverdueBacklogCount();
@@ -61,6 +62,15 @@ export async function AdminNavbar({ currentPath }: { currentPath?: string }) {
                 </Link>
               );
             })}
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:bg-slate-800/60 hover:text-white transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Log out</span>
+              </button>
+            </form>
           </nav>
         </div>
       </div>

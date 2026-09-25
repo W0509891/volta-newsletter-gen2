@@ -6,6 +6,7 @@ import {
 } from '@/lib/db/queries';
 import { AdminNavbar } from '@/components/admin/Navbar';
 import { NewsletterDetailClient } from '@/components/admin/NewsletterDetailClient';
+import { requireAdminPage } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,7 @@ export default async function NewsletterDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdminPage();
   const { id } = await params;
   const newsletter = await getNewsletterById(id);
 

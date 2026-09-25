@@ -27,6 +27,7 @@ test('VOLTA_MCP_TOOLS contains all registered tool definitions with descriptions
     'source.list',
     'source.add',
     'source.remove',
+    'source.set_enabled',
     'source.check_now',
     'delivery.build_digest',
     'delivery.send_slack',
@@ -85,6 +86,12 @@ test('createVoltaMcpServer registers plugin.help tool and returns HTML documenta
   const tools = serverWithTools._registeredTools;
   assert.ok(tools, 'Registered tools must exist on McpServer');
   assert.ok(tools['plugin.help'], 'plugin.help must be registered');
+  assert.ok(tools['source.set_enabled'], 'source.set_enabled must be registered');
+  assert.ok(tools['source.update_eligibility'], 'source.update_eligibility must be registered');
+  assert.ok(tools['do_not_feature.insert'], 'do_not_feature.insert must be registered');
+  assert.ok(tools['do_not_feature.update'], 'do_not_feature.update must be registered');
+  assert.ok(tools['do_not_feature.list'], 'do_not_feature.list must be registered');
+  assert.ok(tools['do_not_feature.get'], 'do_not_feature.get must be registered');
 
   const helpTool = tools['plugin.help'];
   const result = await helpTool.handler({});

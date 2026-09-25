@@ -5,10 +5,12 @@ import {
 } from '@/lib/db/queries';
 import { AdminNavbar } from '@/components/admin/Navbar';
 import { ItemsList } from '@/components/admin/ItemsList';
+import { requireAdminPage } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
+  await requireAdminPage();
   const [items, newsletters, overdueCount] = await Promise.all([
     getContentItems(),
     getNewsletters(),

@@ -1,10 +1,12 @@
 import { getBacklogItems } from '@/lib/db/queries';
 import { AdminNavbar } from '@/components/admin/Navbar';
 import { BacklogQueue } from '@/components/admin/BacklogQueue';
+import { requireAdminPage } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
 export default async function BacklogPage() {
+  await requireAdminPage();
   const backlogItems = await getBacklogItems();
 
   return (

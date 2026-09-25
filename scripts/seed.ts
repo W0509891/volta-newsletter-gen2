@@ -1,4 +1,4 @@
-import { query } from '../lib/db';
+import { query } from '@/lib/db';
 
 async function seed() {
   console.log('Seeding initial Volta data...');

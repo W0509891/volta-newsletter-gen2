@@ -15,6 +15,12 @@ import {
 } from '@/lib/services/content-service';
 import { createPreviewConsentRequest } from '@/lib/services/consent-service';
 import {
+  insertDoNotFeature,
+  updateDoNotFeature,
+  getDoNotFeature,
+  listDoNotFeatures,
+} from '@/lib/services/do-not-feature-service';
+import {
   createDispatchNewsletter,
   pushDispatchNewsletterToMailchimp,
   renderDispatchNewsletter,
@@ -28,7 +34,8 @@ import {
 } from '@/lib/services/curation-service';
 import {
   addNewsSource,
-removeNewsSource,
+  removeNewsSource,
+  updateNewsSourceEnabled,
   checkNewsSourcesNow,
   dismissNewsCandidate,
   getNewsCandidate,
@@ -223,6 +230,62 @@ export function createVoltaMcpServer() {
   );
 
   server.registerTool(
+    'do_not_feature.insert',
+    {
+      description: 'Insert an entity into the do-not-feature suppression list.',
+      inputSchema: {
+        name: z.string().trim().min(1).max(255),
+        requestedAt: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+          .optional(),
+        note: z.string().optional(),
+        enabled: z.boolean().optional(),
+      },
+    },
+    async (input) => jsonResult({ entry: await insertDoNotFeature(input) })
+  );
+
+  server.registerTool(
+    'do_not_feature.update',
+    {
+      description: 'Update an existing entry in the do-not-feature suppression list.',
+      inputSchema: {
+        id: z.string().uuid(),
+        name: z.string().trim().min(1).max(255).optional(),
+        requestedAt: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+          .optional(),
+        note: z.string().optional(),
+        enabled: z.boolean().optional(),
+      },
+    },
+    async ({ id, ...data }) => jsonResult({ entry: await updateDoNotFeature(id, data) })
+  );
+
+  server.registerTool(
+    'do_not_feature.list',
+    {
+      description: 'List entries in the do-not-feature suppression list.',
+      inputSchema: {
+        enabled: z.boolean().optional(),
+        search: z.string().trim().optional(),
+      },
+    },
+    async (input) => jsonResult({ entries: await listDoNotFeatures(input) })
+  );
+
+  server.registerTool(
+    'do_not_feature.get',
+    {
+      description: 'Get a do-not-feature entry by ID.',
+      inputSchema: { id: z.string().uuid() },
+    },
+    async ({ id }) => jsonResult({ entry: await getDoNotFeature(id) })
+  );
+
+  server.registerTool(
     'submission.list',
     {
       description: 'List founder submissions for curation.',
@@ -342,7 +405,53 @@ export function createVoltaMcpServer() {
       },
     },
     async (input) => jsonResult({ source: await removeNewsSource(input.id) })
-  )
+  );
+
+  server.registerTool(
+    'source.set_enabled',
+    {
+      description: 'Enable or disable a configured news source.',
+      inputSchema: {
+        id: z.string().trim().min(1).max(180),
+        enabled: z.boolean(),
+      },
+    },
+    async ({ id, enabled }) => jsonResult({ source: await updateNewsSourceEnabled(id, enabled) })
+  );
+
+  server.registerTool(
+    'source.update_enabled',
+    {
+      description: 'Update the eligibility or enabled status of a news source.',
+      inputSchema: {
+        id: z.string().trim().min(1).max(180),
+        enabled: z.boolean(),
+      },
+    },
+    async (input) => {
+      return jsonResult({
+        source: await updateNewsSourceEnabled(input.id, input.enabled),
+      });
+    }
+  );
+
+  server.registerTool(
+    'source.update_eligibility',
+    {
+      description: 'Update the eligibility or enabled status of a news source.',
+      inputSchema: {
+        id: z.string().trim().min(1).max(180),
+        isEnabled: z.boolean().optional(),
+        enabled: z.boolean().optional(),
+      },
+    },
+    async (input) => {
+      const enabled = input.isEnabled ?? input.enabled ?? true;
+      return jsonResult({
+        source: await updateNewsSourceEnabled(input.id, enabled),
+      });
+    }
+  );
   server.registerTool(
     'source.check_now',
     {
@@ -429,10 +538,10 @@ export function createVoltaMcpServer() {
         position: z.number().int().min(0).optional(),
       },
     },
-    async ({ newsletterId, contentItemId, section, position }) => {
-      await attachContentItemToNewsletter(newsletterId, contentItemId, section, position || 0);
-      return jsonResult({ success: true });
-    }
+    async ({ newsletterId, contentItemId, section, position }) =>
+      jsonResult(
+        await attachContentItemToNewsletter(newsletterId, contentItemId, section, position || 0)
+      )
   );
 
   server.registerTool(

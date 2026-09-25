@@ -1,10 +1,12 @@
 import { getNewsletters } from '@/lib/db/queries';
 import { AdminNavbar } from '@/components/admin/Navbar';
 import { NewslettersList } from '@/components/admin/NewslettersList';
+import { requireAdminPage } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
 export default async function NewslettersPage() {
+  await requireAdminPage();
   const newsletters = await getNewsletters();
 
   return (

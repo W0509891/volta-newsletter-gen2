@@ -1,16 +1,24 @@
+//- "Around the lab": two-up tile grid that stacks on phones.
+//- An odd last item spans both columns.
+- var typeLabel = function (t) { return t ? t.charAt(0) + t.slice(1).toLowerCase() : '' }
+
 if items && items.length > 0
-  div(style="margin-bottom: 24px;")
-    h3(class="section-heading" style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #f59e0b; margin: 0 0 16px 0; border-bottom: 1px solid #334155; padding-bottom: 8px;")
-      | WINS, OPPORTUNITIES &amp; COMMUNITY
-    each item in items
-      div(class="item-card" style="background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 18px; margin-bottom: 14px;")
-        table(role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%")
-          tr
-            td
-              div(style="margin-bottom: 4px;")
-                span(style="display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; color: #38bdf8; letter-spacing: 1px;") #{item.type}
-              h4(class="item-title" style="font-size: 16px; font-weight: 700; color: #ffffff; margin: 0 0 6px 0; line-height: 1.3;") #{item.title}
-              if item.summary
-                p(class="item-summary" style="font-size: 13.5px; color: #cbd5e1; line-height: 1.5; margin: 0 0 10px 0;") #{item.summary}
-              if item.url || item.trackedUrl
-                a(href=(item.trackedUrl || item.url) class="item-link" style="display: inline-block; font-size: 13px; font-weight: 600; color: #38bdf8; text-decoration: none;") Learn more &rarr;
+  +sectionHeading('Around the lab')
+  - var rows = []
+  - for (var r = 0; r < items.length; r += 2) rows.push(items.slice(r, r + 2))
+  table(role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%")
+    each row in rows
+      tr
+        each item, j in row
+          - var solo = row.length === 1
+          - var pad = solo ? 'padding:0 0 12px 0;' : (j === 0 ? 'padding:0 6px 12px 0;' : 'padding:0 0 12px 6px;')
+          td(class=(solo ? null : 'stack') width=(solo ? '100%' : '50%') colspan=(solo ? 2 : 1) valign="top" style=pad)
+            table(role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" height="100%")
+              tr
+                td(bgcolor="#07090c" valign="top" style="padding:16px;border:1px solid #232a30;border-radius:14px;background-color:#07090c;")
+                  div(style=`font-family:${VOLTA_FONT};font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#25c7d9;`)= typeLabel(item.type)
+                  h4(style=`font-family:${VOLTA_FONT};font-size:16px;font-weight:700;letter-spacing:-0.15px;line-height:1.3;color:#ffffff;margin:8px 0 6px 0;`)= item.title
+                  if item.summary
+                    p(style=`font-family:${VOLTA_FONT};font-size:14px;line-height:1.5;color:#9aa0a6;margin:0 0 10px 0;`)= item.summary
+                  if item.url || item.trackedUrl
+                    +textLink(item.trackedUrl || item.url, 'Learn more')

@@ -1,17 +1,19 @@
 extends base-layout
 
 block content
-  // 1. Founder highlight (top founder story / featured)
-  if newsletter.sections && newsletter.sections.featured && newsletter.sections.featured.length > 0
-    - var items = newsletter.sections.featured
+  - var sections = newsletter.sections || {}
+
+  //- 1. Featured founder story (hero)
+  if sections.featured && sections.featured.length > 0
+    - var items = sections.featured
     include sections/founder-highlight
 
-  // 2. Events (all EVENT items linked to this Newsletter)
-  if newsletter.sections && newsletter.sections.events && newsletter.sections.events.length > 0
-    - var items = newsletter.sections.events
+  //- 2. Events ("Coming up")
+  if sections.events && sections.events.length > 0
+    - var items = sections.events
     include sections/events
 
-  // 3. Program updates / other (WINS, OPPORTUNITIES, COMMUNITY)
-  if newsletter.sections && newsletter.sections.updates && newsletter.sections.updates.length > 0
-    - var items = newsletter.sections.updates
+  //- 3. Stories, wins, opportunities, community ("Around the lab")
+  if sections.updates && sections.updates.length > 0
+    - var items = sections.updates
     include sections/program-updates

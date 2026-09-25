@@ -7,6 +7,7 @@ import {
 import { getMailchimpReport } from '@/lib/mailchimp';
 import { AdminNavbar } from '@/components/admin/Navbar';
 import { NewsletterReportClient } from '@/components/admin/NewsletterReportClient';
+import { requireAdminPage } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,7 @@ export default async function NewsletterReportPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdminPage();
   const { id } = await params;
   const newsletter = await getNewsletterById(id);
 

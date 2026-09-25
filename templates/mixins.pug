@@ -1,0 +1,39 @@
+//- Shared Volta email building blocks. Included once from weekly.pug.
+
+- var VOLTA_SPECTRUM = 'linear-gradient(90deg,#5b2bff 0%,#3b6cff 25%,#19d3e0 50%,#f47a8a 75%,#ffa62b 100%)'
+- var VOLTA_FONT = "'Instrument Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif"
+
+//- Thin spectrum rule. Solid blue in clients that ignore gradients (Outlook).
+mixin spectrumRule(height)
+  table(role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%")
+    tr
+      td(height=(height || 2) bgcolor="#3b6cff" style=`height:${height || 2}px;line-height:${height || 2}px;font-size:0;background-color:#3b6cff;background-image:${VOLTA_SPECTRUM};`) &nbsp;
+
+//- Teal tracked eyebrow, matching the site.
+mixin eyebrow(text)
+  div(style=`font-family:${VOLTA_FONT};font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#25c7d9;line-height:1.4;`)= text
+
+//- Section heading with a spectrum rule above it.
+mixin sectionHeading(text)
+  table(role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:28px 0 14px 0;")
+    tr
+      td(style="padding:0 0 18px 0;")
+        +spectrumRule(2)
+    tr
+      td
+        h3(style=`font-family:${VOLTA_FONT};font-size:20px;font-weight:700;letter-spacing:-0.3px;color:#ffffff;margin:0;line-height:1.2;`)= text
+
+//- Gradient-outline pill. Outer cell carries the gradient (solid violet fallback),
+//- inner cell is the black fill. Outlook renders it square, which is fine.
+mixin pillButton(href, label)
+  table(role="presentation" border="0" cellpadding="0" cellspacing="0")
+    tr
+      td(bgcolor="#8b3cff" style="border-radius:999px;padding:2px;background-color:#8b3cff;background-image:linear-gradient(90deg,#ff9a3c,#f0567a,#8b3cff,#3b6cff);")
+        table(role="presentation" border="0" cellpadding="0" cellspacing="0")
+          tr
+            td(bgcolor="#000000" style="border-radius:999px;background-color:#000000;")
+              a(href=href style=`display:inline-block;padding:10px 20px;font-family:${VOLTA_FONT};font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px;`)= label
+
+//- Plain text link in the site's nav blue.
+mixin textLink(href, label)
+  a(href=href style=`font-family:${VOLTA_FONT};font-size:14px;font-weight:600;color:#3b9cff;text-decoration:none;`)= label

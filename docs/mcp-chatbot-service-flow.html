@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Volta MCP Service Flow</title>
+  <style>
+    :root {
+      --page: #eef2f5;
+      --surface: #ffffff;
+      --ink: #18212c;
+      --muted: #607083;
+      --line: #cbd5df;
+      --client: #176b87;
+      --edge: #6656a3;
+      --mcp: #16705a;
+      --domain: #ad6318;
+      --data: #a53e4d;
+      --active: #0b5b43;
+      --soft-active: #e9f5f0;
+      --shadow: 0 12px 28px rgba(24, 33, 44, 0.09);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button,
+    code {
+      font: inherit;
+    }
+
+    main {
+      width: min(1480px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 34px 0 50px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 430px);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      max-width: 820px;
+      font-size: clamp(2rem, 4vw, 4.2rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .intro {
+      max-width: 820px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+
+    .scope {
+      border-left: 4px solid var(--mcp);
+      padding: 4px 0 4px 17px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .scope strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+      font-size: 0.83rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .flow-picker {
+      display: flex;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .flow-button {
+      min-width: 142px;
+      min-height: 52px;
+      padding: 10px 16px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: transparent;
+      color: #415063;
+      cursor: pointer;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    .flow-button:last-child {
+      border-right: 0;
+    }
+
+    .flow-button:hover {
+      background: #f5f8fa;
+    }
+
+    .flow-button:focus-visible {
+      position: relative;
+      z-index: 1;
+      outline: 3px solid #84c9b6;
+      outline-offset: -3px;
+    }
+
+    .flow-button[aria-selected="true"] {
+      background: var(--active);
+      color: #ffffff;
+    }
+
+    .diagram {
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .diagram-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: start;
+      padding: 22px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .diagram-head h2 {
+      font-size: 1.3rem;
+      line-height: 1.2;
+    }
+
+    .diagram-head p {
+      max-width: 820px;
+      margin-top: 7px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .flow-kind {
+      padding: 7px 10px;
+      border: 1px solid #9db3a9;
+      background: var(--soft-active);
+      color: var(--active);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    .path-viewport {
+      overflow-x: auto;
+      padding: 24px;
+    }
+
+    .path {
+      display: none;
+      min-width: 1220px;
+      grid-template-columns: repeat(6, minmax(170px, 1fr));
+      align-items: stretch;
+      gap: 34px;
+    }
+
+    .path.active {
+      display: grid;
+    }
+
+    .step {
+      position: relative;
+      min-height: 190px;
+      border: 1px solid #cbd5df;
+      border-top: 6px solid var(--step-color);
+      background: #ffffff;
+      padding: 16px;
+    }
+
+    .step::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -35px;
+      width: 34px;
+      border-top: 2px solid #78889b;
+    }
+
+    .step::before {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      top: calc(50% - 5px);
+      right: -35px;
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid #78889b;
+      border-right: 2px solid #78889b;
+      background: var(--surface);
+      transform: rotate(45deg);
+    }
+
+    .step:last-child::after,
+    .step:last-child::before {
+      display: none;
+    }
+
+    .step.client { --step-color: var(--client); }
+    .step.edge { --step-color: var(--edge); }
+    .step.mcp { --step-color: var(--mcp); }
+    .step.domain { --step-color: var(--domain); }
+    .step.data { --step-color: var(--data); }
+
+    .step-number {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      margin-bottom: 18px;
+      border: 1px solid var(--step-color);
+      border-radius: 50%;
+      color: var(--step-color);
+      font-size: 0.8rem;
+      font-weight: 850;
+    }
+
+    .owner {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--step-color);
+      font-size: 0.72rem;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .step h3 {
+      font-size: 1rem;
+      line-height: 1.25;
+    }
+
+    .step p {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    code {
+      padding: 1px 4px;
+      border: 1px solid #d9e1e8;
+      background: #edf2f6;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.84em;
+    }
+
+    .service-map {
+      margin-top: 24px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: baseline;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-title h2 {
+      font-size: 1.1rem;
+    }
+
+    .section-title p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .map-viewport {
+      overflow-x: auto;
+    }
+
+    .map-grid {
+      min-width: 1140px;
+      display: grid;
+      grid-template-columns: 170px repeat(5, minmax(180px, 1fr));
+    }
+
+    .map-cell {
+      min-height: 116px;
+      padding: 15px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #ffffff;
+    }
+
+    .map-cell:nth-child(6n) {
+      border-right: 0;
+    }
+
+    .map-cell:nth-last-child(-n + 6) {
+      border-bottom: 0;
+    }
+
+    .boundary {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: #f2f5f8;
+    }
+
+    .boundary strong {
+      font-size: 0.86rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .boundary span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
+    .service {
+      min-height: 84px;
+      padding: 13px;
+      border-left: 5px solid var(--service-color);
+      background: #f9fbfc;
+    }
+
+    .service.client { --service-color: var(--client); }
+    .service.edge { --service-color: var(--edge); }
+    .service.mcp { --service-color: var(--mcp); }
+    .service.domain { --service-color: var(--domain); }
+    .service.data { --service-color: var(--data); }
+
+    .service strong {
+      display: block;
+      font-size: 0.91rem;
+      line-height: 1.25;
+    }
+
+    .service span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.79rem;
+      line-height: 1.35;
+    }
+
+    .empty {
+      background: #fbfcfd;
+    }
+
+    .contracts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .contract {
+      border: 1px solid var(--line);
+      border-top: 5px solid var(--contract-color);
+      background: var(--surface);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .contract.auth { --contract-color: var(--edge); }
+    .contract.publish { --contract-color: var(--domain); }
+    .contract.observe { --contract-color: var(--data); }
+
+    .contract h2 {
+      font-size: 1rem;
+      margin-bottom: 9px;
+    }
+
+    .contract p,
+    .contract li {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    ul {
+      margin: 8px 0 0;
+      padding-left: 19px;
+    }
+
+    li + li {
+      margin-top: 5px;
+    }
+
+    footer {
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 0.87rem;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        width: min(100% - 24px, 1480px);
+        padding-top: 24px;
+      }
+
+      header,
+      .contracts {
+        grid-template-columns: 1fr;
+      }
+
+      .diagram-head,
+      .section-title {
+        display: block;
+      }
+
+      .flow-kind,
+      .section-title p {
+        display: inline-block;
+        margin-top: 12px;
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      main {
+        width: 100%;
+        padding: 0;
+      }
+
+      .flow-picker {
+        display: none;
+      }
+
+      .path {
+        min-width: 0;
+        gap: 18px;
+      }
+
+      .step::after,
+      .step::before {
+        display: none;
+      }
+
+      .diagram,
+      .service-map,
+      .contract {
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Volta MCP Service Flow</h1>
+        <p class="intro">
+          Runtime handoffs between an AI chatbot, the OAuth compatibility layer, the Volta MCP gateway,
+          application services, and external systems. Select a flow to inspect one end-to-end request path.
+        </p>
+      </div>
+      <p class="scope">
+        <strong>Implementation scope</strong>
+        Current Next.js routes, MCP tool registry, newsletter services, PostgreSQL persistence,
+        Mailchimp Marketing API, Slack, and Discord.
+      </p>
+    </header>
+
+    <nav class="flow-picker" aria-label="Service flows" role="tablist">
+      <button class="flow-button" id="tab-auth" role="tab" aria-selected="true" aria-controls="flow-auth" data-flow="auth">Connect + authorize</button>
+      <button class="flow-button" id="tab-draft" role="tab" aria-selected="false" aria-controls="flow-draft" data-flow="draft">Create draft</button>
+      <button class="flow-button" id="tab-sync" role="tab" aria-selected="false" aria-controls="flow-sync" data-flow="sync">Sync campaign</button>
+      <button class="flow-button" id="tab-send" role="tab" aria-selected="false" aria-controls="flow-send" data-flow="send">Send campaign</button>
+      <button class="flow-button" id="tab-report" role="tab" aria-selected="false" aria-controls="flow-report" data-flow="report">Report + notify</button>
+    </nav>
+
+    <section class="diagram" aria-live="polite">
+      <div class="diagram-head">
+        <div>
+          <h2 id="flow-title">Connect and authorize the chatbot</h2>
+          <p id="flow-description">OAuth discovery and PKCE establish the bearer credential used for every protected MCP request.</p>
+        </div>
+        <span class="flow-kind" id="flow-kind">Control plane</span>
+      </div>
+
+      <div class="path-viewport">
+        <div class="path active" id="flow-auth" role="tabpanel" aria-labelledby="tab-auth">
+          <article class="step client">
+            <span class="step-number">1</span><span class="owner">Claude web client</span>
+            <h3>Connect to Volta MCP</h3>
+            <p>Requests <code>/mcp/volta</code> without a credential and receives a <code>401</code> challenge.</p>
+          </article>
+          <article class="step edge">
+            <span class="step-number">2</span><span class="owner">Resource metadata route</span>
+            <h3>Discover OAuth server</h3>
+            <p><code>/.well-known/oauth-protected-resource/mcp/volta</code> identifies the protected resource and issuer.</p>
+          </article>
+          <article class="step edge">
+            <span class="step-number">3</span><span class="owner">GET /authorize</span>
+            <h3>Validate client + PKCE</h3>
+            <p>Checks <code>volta_user</code>, callback allowlist, state, response type, and the S256 challenge.</p>
+          </article>
+          <article class="step edge">
+            <span class="step-number">4</span><span class="owner">POST /token</span>
+            <h3>Exchange signed code</h3>
+            <p>Verifies the short-lived authorization code and PKCE verifier, then returns a bearer token.</p>
+          </article>
+          <article class="step mcp">
+            <span class="step-number">5</span><span class="owner">MCP HTTP gateway</span>
+            <h3>Accept protected request</h3>
+            <p><code>/mcp/volta</code> validates <code>Authorization: Bearer</code> and applies request rate limits.</p>
+          </article>
+          <article class="step client">
+            <span class="step-number">6</span><span class="owner">Claude web client</span>
+            <h3>Load Volta tools</h3>
+            <p>The client lists typed MCP tools and can begin an authenticated operational session.</p>
+          </article>
+        </div>
+
+        <div class="path" id="flow-draft" role="tabpanel" aria-labelledby="tab-draft" hidden>
+          <article class="step client">
+            <span class="step-number">1</span><span class="owner">AI chatbot</span>
+            <h3>Request a newsletter draft</h3>
+            <p>The model chooses content search and newsletter tools from the user instruction.</p>
+          </article>
+          <article class="step mcp">
+            <span class="step-number">2</span><span class="owner">MCP tool registry</span>
+            <h3>Validate tool input</h3>
+            <p><code>content.search</code>, news, founder, and consent tools normalize typed arguments.</p>
+          </article>
+          <article class="step domain">
+            <span class="step-number">3</span><span class="owner">Content services</span>
+            <h3>Resolve eligible material</h3>
+            <p>Loads approved content, revisions, candidates, founder submissions, and consent state.</p>
+          </article>
+          <article class="step data">
+            <span class="step-number">4</span><span class="owner">PostgreSQL</span>
+            <h3>Read and persist draft</h3>
+            <p>Queries source records, then stores the newsletter and ordered newsletter items.</p>
+          </article>
+          <article class="step domain">
+            <span class="step-number">5</span><span class="owner">Render service</span>
+            <h3>Build email HTML</h3>
+            <p><code>newsletter.render</code> runs Pug templates and Juice CSS inlining with tracked URLs.</p>
+          </article>
+          <article class="step client">
+            <span class="step-number">6</span><span class="owner">AI chatbot</span>
+            <h3>Return draft result</h3>
+            <p>Receives structured newsletter IDs, item state, rendered output, and validation errors.</p>
+          </article>
+        </div>
+
+        <div class="path" id="flow-sync" role="tabpanel" aria-labelledby="tab-sync" hidden>
+          <article class="step client">
+            <span class="step-number">1</span><span class="owner">AI chatbot</span>
+            <h3>Request campaign sync</h3>
+            <p>Calls <code>newsletter.sync_mailchimp</code> for a reviewed newsletter draft.</p>
+          </article>
+          <article class="step mcp">
+            <span class="step-number">2</span><span class="owner">MCP gateway</span>
+            <h3>Authorize + parse</h3>
+            <p>Checks the bearer credential, rate limit, tool name, and newsletter identifier.</p>
+          </article>
+          <article class="step domain">
+            <span class="step-number">3</span><span class="owner">Newsletter service</span>
+            <h3>Run publication gate</h3>
+            <p>Rejects content that is not eligible and ensures a rendered newsletter is ready.</p>
+          </article>
+          <article class="step data">
+            <span class="step-number">4</span><span class="owner">PostgreSQL</span>
+            <h3>Load campaign payload</h3>
+            <p>Returns newsletter metadata, ordered items, rendered HTML, and tracked links.</p>
+          </article>
+          <article class="step data">
+            <span class="step-number">5</span><span class="owner">Mailchimp API</span>
+            <h3>Create or update draft</h3>
+            <p>Uses access token or API key, audience ID, sender details, and rendered HTML.</p>
+          </article>
+          <article class="step domain">
+            <span class="step-number">6</span><span class="owner">Newsletter service</span>
+            <h3>Persist remote identity</h3>
+            <p>Saves campaign ID, web ID, archive URL, sync state, and an audit record.</p>
+          </article>
+        </div>
+
+        <div class="path" id="flow-send" role="tabpanel" aria-labelledby="tab-send" hidden>
+          <article class="step client">
+            <span class="step-number">1</span><span class="owner">Human via chatbot</span>
+            <h3>Explicitly request send</h3>
+            <p>A curator confirms the reviewed Mailchimp draft should be delivered.</p>
+          </article>
+          <article class="step mcp">
+            <span class="step-number">2</span><span class="owner">newsletter.send tool</span>
+            <h3>Validate request</h3>
+            <p>The MCP layer authorizes the call and passes a typed newsletter ID downstream.</p>
+          </article>
+          <article class="step domain">
+            <span class="step-number">3</span><span class="owner">Newsletter service</span>
+            <h3>Run final send gate</h3>
+            <p>Blocks duplicate sends, missing campaign IDs, and any newly ineligible content.</p>
+          </article>
+          <article class="step data">
+            <span class="step-number">4</span><span class="owner">Mailchimp API</span>
+            <h3>Send campaign</h3>
+            <p>Triggers delivery for the already synchronized remote campaign.</p>
+          </article>
+          <article class="step data">
+            <span class="step-number">5</span><span class="owner">PostgreSQL</span>
+            <h3>Commit delivery state</h3>
+            <p>Marks the newsletter sent, archives included content, and records the operation.</p>
+          </article>
+          <article class="step client">
+            <span class="step-number">6</span><span class="owner">AI chatbot</span>
+            <h3>Report final status</h3>
+            <p>Returns structured success or an actionable error without bypassing server gates.</p>
+          </article>
+        </div>
+
+        <div class="path" id="flow-report" role="tabpanel" aria-labelledby="tab-report" hidden>
+          <article class="step client">
+            <span class="step-number">1</span><span class="owner">AI chatbot / scheduler</span>
+            <h3>Request metrics or digest</h3>
+            <p>Invokes newsletter reporting or a <code>delivery.*</code> notification tool.</p>
+          </article>
+          <article class="step mcp">
+            <span class="step-number">2</span><span class="owner">MCP tool registry</span>
+            <h3>Route operation</h3>
+            <p>Dispatches to the newsletter or notification service after schema validation.</p>
+          </article>
+          <article class="step data">
+            <span class="step-number">3</span><span class="owner">Mailchimp API</span>
+            <h3>Fetch campaign report</h3>
+            <p>Returns sends, opens, clicks, rates, and per-link click details.</p>
+          </article>
+          <article class="step domain">
+            <span class="step-number">4</span><span class="owner">Notification service</span>
+            <h3>Build channel payload</h3>
+            <p>Formats undelivered news candidates for an internal Slack or Discord digest.</p>
+          </article>
+          <article class="step data">
+            <span class="step-number">5</span><span class="owner">Slack / Discord</span>
+            <h3>Deliver notification</h3>
+            <p>Posts through the configured webhook for the requested internal channel.</p>
+          </article>
+          <article class="step data">
+            <span class="step-number">6</span><span class="owner">PostgreSQL</span>
+            <h3>Record delivery + audit</h3>
+            <p>Stores delivery records and audit metadata so repeated digests can exclude sent items.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="service-map">
+      <div class="section-title">
+        <h2>Service ownership and boundaries</h2>
+        <p>Left to right shows the normal direction of a protected request.</p>
+      </div>
+      <div class="map-viewport">
+        <div class="map-grid">
+          <div class="map-cell boundary"><strong>Experience</strong><span>Prompting and approval</span></div>
+          <div class="map-cell"><div class="service client"><strong>Claude web client</strong><span>MCP discovery, OAuth redirect, tool selection, user-visible result</span></div></div>
+          <div class="map-cell empty"></div><div class="map-cell empty"></div><div class="map-cell empty"></div><div class="map-cell empty"></div>
+
+          <div class="map-cell boundary"><strong>Access edge</strong><span>Identity and transport</span></div>
+          <div class="map-cell empty"></div>
+          <div class="map-cell"><div class="service edge"><strong>OAuth compatibility routes</strong><span>Metadata, <code>/authorize</code>, <code>/token</code>, PKCE, signed code</span></div></div>
+          <div class="map-cell"><div class="service mcp"><strong><code>/mcp/volta</code></strong><span>Bearer validation, rate limiting, MCP streamable HTTP transport</span></div></div>
+          <div class="map-cell empty"></div><div class="map-cell empty"></div>
+
+          <div class="map-cell boundary"><strong>Application</strong><span>Typed operations and policy</span></div>
+          <div class="map-cell empty"></div><div class="map-cell empty"></div>
+          <div class="map-cell"><div class="service mcp"><strong>Volta MCP tool registry</strong><span>Tool schemas, dispatch, structured MCP responses</span></div></div>
+          <div class="map-cell"><div class="service domain"><strong>Domain services</strong><span>Content, newsletter, consent, news, render, notifications, audit</span></div></div>
+          <div class="map-cell empty"></div>
+
+          <div class="map-cell boundary"><strong>Dependencies</strong><span>Durable and remote systems</span></div>
+          <div class="map-cell empty"></div><div class="map-cell empty"></div><div class="map-cell empty"></div>
+          <div class="map-cell"><div class="service data"><strong>PostgreSQL</strong><span>Content, newsletters, consent, tracked links, delivery, audit</span></div></div>
+          <div class="map-cell"><div class="service data"><strong>Mailchimp + channels</strong><span>Campaigns, reports, Slack webhooks, Discord webhooks</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="contracts">
+      <article class="contract auth">
+        <h2>Authentication contract</h2>
+        <ul>
+          <li>Claude authenticates to Volta with a bearer token obtained through Authorization Code + PKCE.</li>
+          <li>The OAuth shim is a compatibility layer; <code>/mcp/volta</code> remains the enforcement point.</li>
+          <li>Client ID, redirect URI, code challenge, expiry, and signature are validated server-side.</li>
+        </ul>
+      </article>
+      <article class="contract publish">
+        <h2>Publication contract</h2>
+        <ul>
+          <li>MCP tools call the same newsletter service gates as the application.</li>
+          <li>Sync creates or updates a Mailchimp draft; send is a separate explicit operation.</li>
+          <li>Consent, eligibility, duplicate-send, and campaign-state checks stay inside Volta.</li>
+        </ul>
+      </article>
+      <article class="contract observe">
+        <h2>Observability contract</h2>
+        <ul>
+          <li>Tool results return structured IDs, URLs, status, and actionable errors to the chatbot.</li>
+          <li>Database audit and delivery records preserve operational history.</li>
+          <li>Mailchimp remains the source for delivery metrics; Volta stores its linked campaign identity.</li>
+        </ul>
+      </article>
+    </section>
+
+    <footer>
+      Internal artifact for Volta Newsletter Gen 2. Standalone HTML with no external scripts, fonts, or network dependencies.
+    </footer>
+  </main>
+
+  <script>
+    const flowDetails = {
+      auth: {
+        title: "Connect and authorize the chatbot",
+        description: "OAuth discovery and PKCE establish the bearer credential used for every protected MCP request.",
+        kind: "Control plane"
+      },
+      draft: {
+        title: "Create and render a newsletter draft",
+        description: "The MCP layer coordinates content selection, durable draft state, rendering, and a structured result for the chatbot.",
+        kind: "Content plane"
+      },
+      sync: {
+        title: "Synchronize a draft to Mailchimp",
+        description: "Volta checks publication eligibility before creating or updating the remote Mailchimp campaign and persisting its identity.",
+        kind: "Publish preparation"
+      },
+      send: {
+        title: "Send an approved Mailchimp campaign",
+        description: "A distinct, explicit request passes through the final server-side gate before Mailchimp delivery and local state updates.",
+        kind: "External side effect"
+      },
+      report: {
+        title: "Retrieve results and notify internal channels",
+        description: "Reporting and digest tools combine Mailchimp metrics, notification formatting, external webhooks, and delivery records.",
+        kind: "Observe + notify"
+      }
+    };
+
+    const buttons = [...document.querySelectorAll(".flow-button")];
+    const paths = [...document.querySelectorAll(".path")];
+    const title = document.querySelector("#flow-title");
+    const description = document.querySelector("#flow-description");
+    const kind = document.querySelector("#flow-kind");
+
+    function selectFlow(flow) {
+      const detail = flowDetails[flow];
+      if (!detail) return;
+
+      buttons.forEach((button) => {
+        button.setAttribute("aria-selected", String(button.dataset.flow === flow));
+      });
+
+      paths.forEach((path) => {
+        const selected = path.id === `flow-${flow}`;
+        path.classList.toggle("active", selected);
+        path.hidden = !selected;
+      });
+
+      title.textContent = detail.title;
+      description.textContent = detail.description;
+      kind.textContent = detail.kind;
+      window.location.hash = flow;
+    }
+
+    buttons.forEach((button, index) => {
+      button.addEventListener("click", () => selectFlow(button.dataset.flow));
+      button.addEventListener("keydown", (event) => {
+        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+        event.preventDefault();
+        const direction = event.key === "ArrowRight" ? 1 : -1;
+        const next = (index + direction + buttons.length) % buttons.length;
+        buttons[next].focus();
+        selectFlow(buttons[next].dataset.flow);
+      });
+    });
+
+    const initialFlow = window.location.hash.slice(1);
+    if (flowDetails[initialFlow]) selectFlow(initialFlow);
+  </script>
+</body>
+</html>

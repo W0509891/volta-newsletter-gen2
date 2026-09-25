@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Volta Newsletter MCP Architecture Flow</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18212f;
+      --muted: #5f6b7a;
+      --line: #c9d2de;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --blue: #1768ac;
+      --green: #247b5a;
+      --yellow: #b26a00;
+      --red: #a43b3b;
+      --violet: #6656a6;
+      --shadow: 0 16px 40px rgba(24, 33, 47, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.45;
+    }
+
+    main {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 820px;
+      font-size: clamp(2rem, 4vw, 4rem);
+    }
+
+    h2 {
+      font-size: clamp(1.45rem, 2vw, 2rem);
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .lede {
+      max-width: 780px;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .meta {
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .meta dl {
+      display: grid;
+      grid-template-columns: 118px minmax(0, 1fr);
+      gap: 8px 12px;
+      margin: 0;
+      font-size: 0.92rem;
+    }
+
+    dt {
+      color: var(--muted);
+    }
+
+    dd {
+      margin: 0;
+      font-weight: 650;
+    }
+
+    section {
+      margin-top: 26px;
+    }
+
+    .band {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .flow {
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .flow-grid {
+      min-width: 1080px;
+      display: grid;
+      grid-template-columns: 1fr 64px 1fr 64px 1fr 64px 1fr;
+      gap: 0;
+      align-items: stretch;
+    }
+
+    .lane {
+      border: 1px solid var(--line);
+      background: #fbfcff;
+      min-height: 560px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lane-title {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      font-weight: 750;
+      color: #ffffff;
+    }
+
+    .lane.chat .lane-title {
+      background: var(--blue);
+    }
+
+    .lane.auth .lane-title {
+      background: var(--violet);
+    }
+
+    .lane.mcp .lane-title {
+      background: var(--green);
+    }
+
+    .lane.systems .lane-title {
+      background: var(--yellow);
+    }
+
+    .steps {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .step {
+      border: 1px solid #d9e0ea;
+      background: #ffffff;
+      padding: 14px;
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.96rem;
+    }
+
+    .step span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .arrow {
+      position: relative;
+      min-height: 560px;
+    }
+
+    .arrow::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 8px;
+      width: 46px;
+      border-top: 2px solid #8390a0;
+    }
+
+    .arrow::after {
+      content: "";
+      position: absolute;
+      top: calc(50% - 5px);
+      right: 9px;
+      width: 10px;
+      height: 10px;
+      border-right: 2px solid #8390a0;
+      border-top: 2px solid #8390a0;
+      transform: rotate(45deg);
+    }
+
+    .swim-caption {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .three-col {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 18px;
+    }
+
+    .card p,
+    li {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    ul,
+    ol {
+      margin: 10px 0 0;
+      padding-left: 20px;
+    }
+
+    li + li {
+      margin-top: 7px;
+    }
+
+    code {
+      padding: 2px 5px;
+      background: #edf1f6;
+      border: 1px solid #d8e0ea;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.88em;
+    }
+
+    .sequence {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .sequence + .sequence {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e0e6ee;
+    }
+
+    .num {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      background: #f7fafc;
+      font-weight: 760;
+      color: var(--blue);
+    }
+
+    .matrix {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.94rem;
+      background: var(--panel);
+    }
+
+    .matrix th,
+    .matrix td {
+      border: 1px solid var(--line);
+      padding: 11px 12px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .matrix th {
+      background: #eef3f8;
+      color: #243040;
+    }
+
+    .matrix td {
+      color: var(--muted);
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .badge {
+      border: 1px solid var(--line);
+      background: #f8fbff;
+      color: #334155;
+      padding: 6px 9px;
+      font-size: 0.84rem;
+      font-weight: 650;
+    }
+
+    .callout {
+      border-left: 5px solid var(--green);
+      background: #f3fbf7;
+      padding: 16px 18px;
+      color: #244a39;
+    }
+
+    .risk {
+      border-left-color: var(--red);
+      background: #fff6f5;
+      color: #613133;
+    }
+
+    .footer-note {
+      margin-top: 32px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 860px) {
+      main {
+        padding: 28px 16px 48px;
+      }
+
+      header,
+      .two-col,
+      .three-col {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      main {
+        max-width: none;
+        padding: 18px;
+      }
+
+      .band,
+      .meta,
+      .card {
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Volta Newsletter MCP Architecture Flow</h1>
+        <p class="lede">
+          Internal view of how an AI chatbot connects to the Volta newsletter system through MCP,
+          completes OAuth-style authorization, and safely invokes curation, consent, newsletter,
+          Mailchimp, and news tooling.
+        </p>
+      </div>
+      <aside class="meta" aria-label="Document metadata">
+        <dl>
+          <dt>System</dt>
+          <dd>Volta Newsletter Gen 2</dd>
+          <dt>Runtime</dt>
+          <dd>Next.js App Router, Node.js</dd>
+          <dt>MCP Route</dt>
+          <dd><code>/mcp/volta</code></dd>
+          <dt>Auth Model</dt>
+          <dd>Authorization code with PKCE</dd>
+          <dt>Updated</dt>
+          <dd>September 24, 2026</dd>
+        </dl>
+      </aside>
+    </header>
+
+    <section class="band">
+      <h2>End-To-End Flow</h2>
+      <div class="flow" aria-label="MCP architecture swimlane flow">
+        <div class="flow-grid">
+          <div class="lane chat">
+            <div class="lane-title">AI Chatbot Client</div>
+            <div class="steps">
+              <div class="step">
+                <strong>1. User adds MCP server</strong>
+                <span>Example server URL: <code>https://volta.example.com/mcp/volta</code>.</span>
+              </div>
+              <div class="step">
+                <strong>2. Client probes MCP route</strong>
+                <span>An unauthenticated call receives <code>401</code> plus a <code>WWW-Authenticate</code> resource metadata URL.</span>
+              </div>
+              <div class="step">
+                <strong>3. Client discovers auth endpoints</strong>
+                <span>Reads protected-resource and authorization-server metadata under <code>/.well-known/...</code>.</span>
+              </div>
+              <div class="step">
+                <strong>4. Client sends tool calls</strong>
+                <span>After token exchange, MCP JSON-RPC requests include <code>Authorization: Bearer ...</code>.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="arrow" aria-hidden="true"></div>
+
+          <div class="lane auth">
+            <div class="lane-title">Next.js OAuth Shim</div>
+            <div class="steps">
+              <div class="step">
+                <strong><code>/authorize</code></strong>
+                <span>Validates <code>client_id</code>, allowed redirect URI, and <code>S256</code> PKCE challenge.</span>
+              </div>
+              <div class="step">
+                <strong>Signed short-lived code</strong>
+                <span>Creates a stateless HMAC-signed authorization code with 5 minute expiry.</span>
+              </div>
+              <div class="step">
+                <strong><code>/token</code></strong>
+                <span>Verifies the code, redirect URI, client ID, and PKCE verifier.</span>
+              </div>
+              <div class="step">
+                <strong>Bearer token issued</strong>
+                <span>Returns the configured <code>VOLTA_MCP_TOKEN</code> as the MCP access token.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="arrow" aria-hidden="true"></div>
+
+          <div class="lane mcp">
+            <div class="lane-title">MCP Transport + Tools</div>
+            <div class="steps">
+              <div class="step">
+                <strong><code>/mcp/volta</code> route</strong>
+                <span>Checks bearer token, applies per-client rate limiting, and sets CORS headers.</span>
+              </div>
+              <div class="step">
+                <strong>Streamable HTTP transport</strong>
+                <span><code>WebStandardStreamableHTTPServerTransport</code> connects request traffic to the MCP server.</span>
+              </div>
+              <div class="step">
+                <strong><code>createVoltaMcpServer()</code></strong>
+                <span>Registers resources and tools for content, submissions, news, delivery, newsletters, and consent.</span>
+              </div>
+              <div class="step">
+                <strong>Structured responses</strong>
+                <span>Tools return human-readable text plus <code>structuredContent</code> for chatbot planning.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="arrow" aria-hidden="true"></div>
+
+          <div class="lane systems">
+            <div class="lane-title">Volta Systems</div>
+            <div class="steps">
+              <div class="step">
+                <strong>Postgres</strong>
+                <span>Stores newsletters, content, revisions, consent records, news candidates, sources, links, and audit logs.</span>
+              </div>
+              <div class="step">
+                <strong>Consent and eligibility services</strong>
+                <span>Publication-sensitive actions check approval state before Mailchimp sync or send.</span>
+              </div>
+              <div class="step">
+                <strong>Render pipeline</strong>
+                <span>Pug templates and Juice produce table-safe, inline-styled email HTML.</span>
+              </div>
+              <div class="step">
+                <strong>Mailchimp</strong>
+                <span>Creates or updates campaigns, uploads rendered HTML, sends campaigns, and fetches reports.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="swim-caption">
+        The chatbot never receives direct database credentials. It only sees MCP resources/tools exposed by the server, and the server enforces authorization, rate limits, validation schemas, and publication gates.
+      </p>
+    </section>
+
+    <section class="two-col">
+      <div class="band">
+        <h2>Chatbot Connection Sequence</h2>
+        <div class="sequence">
+          <div class="num">1</div>
+          <div>
+            <h3>Configure the MCP server URL</h3>
+            <p>The chatbot is given the public server URL, typically <code>https://your-domain.com/mcp/volta</code>.</p>
+          </div>
+        </div>
+        <div class="sequence">
+          <div class="num">2</div>
+          <div>
+            <h3>Trigger protected-resource discovery</h3>
+            <p>The first unauthenticated MCP request returns <code>401</code> and a metadata pointer: <code>/.well-known/oauth-protected-resource/mcp/volta</code>.</p>
+          </div>
+        </div>
+        <div class="sequence">
+          <div class="num">3</div>
+          <div>
+            <h3>Run OAuth code flow with PKCE</h3>
+            <p>The client opens <code>/authorize</code> with <code>response_type=code</code>, <code>client_id=volta_user</code>, a Claude callback URI, and an <code>S256</code> challenge.</p>
+          </div>
+        </div>
+        <div class="sequence">
+          <div class="num">4</div>
+          <div>
+            <h3>Exchange code for token</h3>
+            <p>The client posts to <code>/token</code> with the authorization code and PKCE verifier. The server validates both and returns a bearer token.</p>
+          </div>
+        </div>
+        <div class="sequence">
+          <div class="num">5</div>
+          <div>
+            <h3>Use MCP tools</h3>
+            <p>Requests to <code>/mcp/volta</code> include <code>Authorization: Bearer &lt;token&gt;</code>. The route creates a MCP server instance and executes the requested tool.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="band">
+        <h2>Tool Surface</h2>
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th>Domain</th>
+              <th>Representative Tools</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Content</td>
+              <td><code>content.search</code>, <code>content.create</code>, <code>content.change_status</code></td>
+              <td>Curate stories, events, wins, opportunities, and community items.</td>
+            </tr>
+            <tr>
+              <td>Consent</td>
+              <td><code>revision.current</code>, <code>consent.create_request</code></td>
+              <td>Bind stakeholder approval to immutable content revisions.</td>
+            </tr>
+            <tr>
+              <td>Submissions</td>
+              <td><code>submission.list</code>, <code>submission.promote</code>, <code>submission.reject</code></td>
+              <td>Triage founder-submitted material before editorial work.</td>
+            </tr>
+            <tr>
+              <td>News</td>
+              <td><code>news.search</code>, <code>news.promote</code>, <code>source.check_now</code></td>
+              <td>Review external candidates and convert relevant items into draft content.</td>
+            </tr>
+            <tr>
+              <td>Newsletter</td>
+              <td><code>newsletter.create</code>, <code>newsletter.render</code>, <code>newsletter.sync_mailchimp</code>, <code>newsletter.send</code></td>
+              <td>Build, preview, sync, and send newsletters with server-side eligibility gates.</td>
+            </tr>
+            <tr>
+              <td>Delivery</td>
+              <td><code>delivery.build_digest</code>, <code>delivery.send_slack</code>, <code>delivery.send_discord</code></td>
+              <td>Package news candidates into internal Slack or Discord review digests.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="band">
+      <h2>Core Components</h2>
+      <div class="three-col">
+        <article class="card">
+          <h3>Auth and Discovery</h3>
+          <p>
+            The MCP endpoint advertises OAuth metadata through <code>WWW-Authenticate</code>.
+            The authorization shim supports chatbot clients that expect standards-shaped
+            authorization server discovery and PKCE.
+          </p>
+          <div class="badge-row">
+            <span class="badge"><code>/.well-known/oauth-authorization-server</code></span>
+            <span class="badge"><code>/authorize</code></span>
+            <span class="badge"><code>/token</code></span>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>MCP Runtime</h3>
+          <p>
+            The Next route runs in Node.js, accepts <code>GET</code>, <code>POST</code>,
+            <code>DELETE</code>, and <code>OPTIONS</code>, and delegates each authorized request
+            to the Model Context Protocol SDK streamable HTTP transport.
+          </p>
+          <div class="badge-row">
+            <span class="badge">Bearer auth</span>
+            <span class="badge">Rate limit: 120/min</span>
+            <span class="badge">CORS enabled</span>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Business Services</h3>
+          <p>
+            MCP tools call existing service modules rather than bypassing app rules. This keeps
+            consent, revision tracking, publication eligibility, Mailchimp sync, and status
+            transitions consistent between the admin UI and chatbot workflows.
+          </p>
+          <div class="badge-row">
+            <span class="badge">Postgres</span>
+            <span class="badge">Mailchimp</span>
+            <span class="badge">Slack/Discord</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="two-col">
+      <div class="band">
+        <h2>Security Boundaries</h2>
+        <ul>
+          <li><strong>Allowed redirect URIs:</strong> configured by <code>VOLTA_OAUTH_REDIRECT_URIS</code> and checked before issuing an authorization code.</li>
+          <li><strong>PKCE only:</strong> <code>/authorize</code> requires <code>code_challenge_method=S256</code>; <code>/token</code> validates the matching verifier.</li>
+          <li><strong>Signed stateless code:</strong> the authorization code is HMAC-signed with the MCP token secret and expires after five minutes.</li>
+          <li><strong>Protected MCP route:</strong> <code>/mcp/volta</code> rejects missing or wrong bearer tokens before creating the MCP server transport.</li>
+          <li><strong>Publication gates:</strong> Mailchimp sync/send call <code>evaluateNewsletterPublicationEligibility</code> before external publication.</li>
+          <li><strong>Database user:</strong> <code>volta_emails</code> should have app DML permissions on current tables, not blanket schema administration.</li>
+        </ul>
+      </div>
+
+      <div class="band">
+        <h2>Environment Contract</h2>
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th>Variable</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>VOLTA_MCP_TOKEN</code></td>
+              <td>Bearer token accepted by <code>/mcp/volta</code> and signing key for stateless authorization codes.</td>
+            </tr>
+            <tr>
+              <td><code>VOLTA_OAUTH_CLIENT_ID</code></td>
+              <td>Expected OAuth client ID. Defaults to <code>volta_user</code>.</td>
+            </tr>
+            <tr>
+              <td><code>VOLTA_OAUTH_REDIRECT_URIS</code></td>
+              <td>Approved chatbot callback URLs for the authorization response.</td>
+            </tr>
+            <tr>
+              <td><code>DATABASE_URL</code></td>
+              <td>Postgres connection for newsletters, content, consent, news, and audit data.</td>
+            </tr>
+            <tr>
+              <td><code>MAILCHIMP_ACCESS_TOKEN</code> or <code>MAILCHIMP_API_KEY</code></td>
+              <td>Mailchimp Marketing API authentication for campaign creation, content upload, sending, and reporting.</td>
+            </tr>
+            <tr>
+              <td><code>MAILCHIMP_SERVER_PREFIX</code>, <code>MAILCHIMP_LIST_ID</code></td>
+              <td>Mailchimp data center and target audience/list for campaigns.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="band">
+      <h2>Example Chatbot-To-MCP Journey</h2>
+      <div class="two-col">
+        <div class="callout">
+          <h3>Curator asks the chatbot</h3>
+          <p>
+            "Find approved AI lab stories, create a dispatch draft, render it, and sync it to Mailchimp for review."
+          </p>
+        </div>
+        <div class="callout risk">
+          <h3>Server-side guardrail</h3>
+          <p>
+            Even if the chatbot asks to send immediately, <code>newsletter.sync_mailchimp</code> and
+            <code>newsletter.send</code> re-check eligibility, consent status, and campaign state before acting.
+          </p>
+        </div>
+      </div>
+      <ol>
+        <li>The chatbot calls <code>content.search</code> and <code>news.search</code> to gather candidates.</li>
+        <li>It uses <code>newsletter.create</code> and <code>newsletter.add_item</code> to assemble a draft issue.</li>
+        <li>It calls <code>newsletter.render</code>, which syncs tracked links and renders template HTML.</li>
+        <li>It calls <code>newsletter.sync_mailchimp</code>, which runs eligibility checks, creates or updates a Mailchimp campaign, uploads HTML, and stores campaign IDs back in Postgres.</li>
+        <li>A human curator can preview in Mailchimp or the admin UI before explicitly invoking <code>newsletter.send</code>.</li>
+      </ol>
+    </section>
+
+    <p class="footer-note">
+      Source-aligned to the current implementation in <code>app/mcp/volta/route.ts</code>,
+      <code>lib/oauth/claude-mcp.ts</code>, <code>app/authorize/route.ts</code>,
+      <code>app/token/route.ts</code>, <code>mcp/volta/server.ts</code>, and newsletter service modules.
+    </p>
+  </main>
+</body>
+</html>

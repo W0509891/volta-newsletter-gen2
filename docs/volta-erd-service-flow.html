@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Volta Builders Dispatch — ERD &amp; Service Flow</title>
+<style>
+  :root {
+    --page: #f3f6f8; --surface: #fff; --ink: #17212d; --muted: #617083; --line: #cad5df;
+    --accent: #126b55; --shadow: 0 14px 34px rgba(23,33,45,.09);
+    --editorial: #2563eb; --consent: #d97706; --intake: #0d9488; --newsletter: #7c3aed; --news: #16a34a; --ops: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { width: min(1500px, calc(100% - 40px)); margin: 0 auto; padding: 32px 0 52px; }
+  h1, h2, h3, p { margin: 0; }
+  h1 { font-size: clamp(1.8rem, 3.4vw, 3rem); line-height: 1.05; }
+  .lede { margin-top: 12px; max-width: 900px; color: var(--muted); line-height: 1.55; }
+  nav { display: flex; gap: 8px; margin: 24px 0 16px; flex-wrap: wrap; }
+  nav button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 10px 18px; font: 600 .9rem inherit; font-family: inherit; cursor: pointer; border-radius: 6px; }
+  nav button[aria-selected="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .shell { overflow: auto; border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow); border-radius: 6px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: .82rem; color: var(--muted); align-items: center; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .legend .hint { margin-left: auto; font-style: italic; }
+  svg text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+  /* ERD */
+  .tbl { cursor: pointer; transition: opacity .15s; }
+  .tbl .body { fill: #fff; stroke: #b6c3cf; stroke-width: 1.2; }
+  .tbl .tname { fill: #fff; font-size: 13px; font-weight: 700; }
+  .tbl .fname { fill: var(--ink); font-size: 11.5px; }
+  .tbl .ftype { fill: #8393a5; font-size: 10.5px; text-anchor: end; }
+  .tbl .flag { font-size: 9px; font-weight: 700; fill: #8a5a00; }
+  .tbl .flag.FK { fill: #1d4ed8; } .tbl .flag.UK { fill: #6d28d9; }
+  .tbl .rowline { stroke: #eef2f6; }
+  .tbl.ghost .body { stroke-dasharray: 5 4; fill: #fafbfc; }
+  .rel { fill: none; stroke: #8fa1b3; stroke-width: 1.5; transition: opacity .15s, stroke .15s; }
+  .rel.dashed { stroke-dasharray: 6 4; }
+  .card { font-size: 10px; font-weight: 700; fill: #475569; }
+  .dim { opacity: .14; }
+  .rel.hot { stroke: #0f172a; stroke-width: 2.4; opacity: 1; }
+  /* Service flow */
+  .b rect { stroke-width: 1.3; rx: 8; }
+  .b .t { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
+  .s { font-size: 10.5px; fill: #52627a; }
+  .actor rect { fill: #f1f5f9; stroke: #94a3b8; }
+  .iface rect { fill: #eff6ff; stroke: #60a5fa; }
+  .svc rect { fill: #ecfdf5; stroke: #34d399; }
+  .lib rect { fill: #f5f3ff; stroke: #a78bfa; }
+  .gate rect { fill: #fff7ed; stroke: #f97316; stroke-width: 2.2; }
+  .db rect { fill: #fefce8; stroke: #eab308; }
+  .ext rect { fill: #fdf2f8; stroke: #f472b6; }
+  .band { fill: none; stroke: #cbd5e1; stroke-dasharray: 4 4; rx: 12; }
+  .colh { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; fill: #64748b; }
+  .arrow { fill: none; stroke: #475569; stroke-width: 1.6; }
+  .arrow.ext { stroke: #db2777; } .arrow.db { stroke: #a16207; stroke-width: 2.4; } .arrow.opt { stroke-dasharray: 6 4; }
+  .albl { font-size: 10px; fill: #475569; }
+  /* Flows */
+  .flow { margin: 0 0 18px; border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow); border-radius: 6px; padding: 16px 18px; }
+  .flow h3 { font-size: 1rem; margin-bottom: 4px; }
+  .flow p { color: var(--muted); font-size: .88rem; margin-bottom: 12px; line-height: 1.5; }
+  .chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px 0; }
+  .step { position: relative; padding: 8px 12px; border: 1px solid var(--line); background: #f8fafc; border-radius: 6px; font-size: .8rem; min-width: 120px; max-width: 200px; }
+  .step b { display: block; font-size: .8rem; margin-bottom: 2px; }
+  .step span { color: var(--muted); font-size: .72rem; line-height: 1.35; display: block; }
+  .step.human { background: #fff7ed; border-color: #fdba74; }
+  .step.gate { background: #fef2f2; border-color: #f87171; }
+  .step.ok { background: #ecfdf5; border-color: #6ee7b7; }
+  .step.svc { background: #eff6ff; border-color: #93c5fd; }
+  .arr { align-self: center; padding: 0 6px; color: #94a3b8; font-weight: 700; }
+  .states { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; margin-top: 4px; }
+  .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: .72rem; font-weight: 600; background: #e2e8f0; color: #334155; margin: 2px 0; }
+  .pill.g { background: #d1fae5; color: #065f46; } .pill.r { background: #fee2e2; color: #991b1b; } .pill.y { background: #fef3c7; color: #92400e; } .pill.b { background: #dbeafe; color: #1e40af; }
+  .states .flow { margin: 0; }
+  .states .flow .chain { gap: 4px 4px; }
+  footer { margin-top: 18px; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+  @media print { body { background: #fff; } nav { display: none; } .panel { display: block !important; page-break-after: always; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Volta Builders Dispatch — ERD &amp; Service Flow</h1>
+  <p class="lede">
+    Generation 2 (curation, consent, Pug/Juice rendering, Mailchimp) extended by Generation 3 (revisions, founder submissions,
+    MCP access for <b>@volta</b> / <b>@founder</b>, news aggregation, Slack/Discord digests). The table model comes straight from
+    <code>lib/db/schema.sql</code>; the service layout from <code>lib/services</code>, <code>app/</code> and the Gen 3 docs.
+  </p>
+
+  <nav role="tablist">
+    <button role="tab" aria-selected="true" data-tab="erd">1 · Entity relationships</button>
+    <button role="tab" aria-selected="false" data-tab="svc">2 · Service flow</button>
+    <button role="tab" aria-selected="false" data-tab="flows">3 · Lifecycles &amp; key flows</button>
+  </nav>
+
+  <!-- ============ ERD ============ -->
+  <section id="erd" class="panel active">
+    <div class="shell">
+      <div class="legend">
+        <span><i style="background:var(--editorial)"></i>Editorial core</span>
+        <span><i style="background:var(--consent)"></i>Consent</span>
+        <span><i style="background:var(--intake)"></i>Founder intake</span>
+        <span><i style="background:var(--newsletter)"></i>Newsletter &amp; tracking</span>
+        <span><i style="background:var(--news)"></i>News aggregation</span>
+        <span><i style="background:var(--ops)"></i>Ops / audit</span>
+        <span>Dashed line = logical link with no DB constraint, or planned</span>
+        <span class="hint">Hover a table to isolate its relationships</span>
+      </div>
+      <svg id="erdSvg" viewBox="0 0 1340 1250" width="1340" height="1250" role="img" aria-label="Entity relationship diagram"></svg>
+    </div>
+  </section>
+
+  <!-- ============ SERVICE FLOW ============ -->
+  <section id="svc" class="panel">
+    <div class="shell">
+      <div class="legend">
+        <span><i style="background:#94a3b8"></i>Actor</span>
+        <span><i style="background:#60a5fa"></i>Interface / route</span>
+        <span><i style="background:#34d399"></i>Domain service</span>
+        <span><i style="background:#a78bfa"></i>Supporting lib</span>
+        <span><i style="background:#f97316"></i>Safety gate</span>
+        <span><i style="background:#eab308"></i>Persistence</span>
+        <span><i style="background:#f472b6"></i>External system</span>
+        <span class="hint">Rule: every interface calls the same domain services — MCP never holds business rules or raw SQL</span>
+      </div>
+      <svg id="svcSvg" viewBox="0 0 1540 880" width="1540" height="880" role="img" aria-label="Service flow diagram"></svg>
+    </div>
+  </section>
+
+  <!-- ============ FLOWS ============ -->
+  <section id="flows" class="panel">
+    <div class="flow">
+      <h3>A · Founder submission → editorial draft</h3>
+      <p>A submission is source material, never consent. Promotion is an explicit @volta action and preserves the original row.</p>
+      <div class="chain">
+        <div class="step"><b>@founder agent</b><span>submission.create via /mcp/founder</span></div><div class="arr">→</div>
+        <div class="step svc"><b>Validate + rate limit</b><span>Zod, size/URL caps, spam checks</span></div><div class="arr">→</div>
+        <div class="step"><b>founder_submissions</b><span>RECEIVED · UNVERIFIED · FOUNDER_MCP</span></div><div class="arr">→</div>
+        <div class="step"><b>Receipt only</b><span>id + receivedAt; cannot be used to read</span></div><div class="arr">→</div>
+        <div class="step human"><b>@volta review</b><span>submission.list / get</span></div><div class="arr">→</div>
+        <div class="step human"><b>promote / reject</b><span>TRIAGED → PROMOTED | REJECTED</span></div><div class="arr">→</div>
+        <div class="step ok"><b>content_items + Revision 1</b><span>promoted_content_item_id links provenance</span></div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <h3>B · Revision-specific consent</h3>
+      <p>Consent binds to one immutable revision + content hash. Editing creates a new revision that needs fresh approval where consent is required.</p>
+      <div class="chain">
+        <div class="step human"><b>Edit / draft copy</b><span>creates Revision N (never UPDATE)</span></div><div class="arr">→</div>
+        <div class="step svc"><b>consent-service</b><span>create consent_requests row for Revision N</span></div><div class="arr">→</div>
+        <div class="step"><b>Secure link</b><span>/consent/[token] · only token hash stored</span></div><div class="arr">→</div>
+        <div class="step human"><b>Founder opens link</b><span>sees exact revision, not "current"</span></div><div class="arr">→</div>
+        <div class="step"><b>Approve · Changes · Decline</b><span>PENDING → APPROVED | CHANGES_REQUESTED | DECLINED</span></div><div class="arr">→</div>
+        <div class="step svc"><b>Transaction</b><span>verify token, expiry, hash → consent_records (PREVIEW_LINK)</span></div><div class="arr">→</div>
+        <div class="step ok"><b>Eligibility recalculated</b><span>approved_revision_id set</span></div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <h3>C · Newsletter assembly → Mailchimp send</h3>
+      <p>Every newsletter operation passes through the publication-eligibility gate. A failed Mailchimp call never changes consent state.</p>
+      <div class="chain">
+        <div class="step human"><b>Create edition</b><span>slug, subject, preview text</span></div><div class="arr">→</div>
+        <div class="step svc"><b>Add approved items</b><span>newsletter_items · section + position</span></div><div class="arr">→</div>
+        <div class="step gate"><b>Eligibility gate</b><span>consent_required &amp; current revision approved?</span></div><div class="arr">→</div>
+        <div class="step svc"><b>Render</b><span>Pug tables → UTM links → tracked_links → Juice inline</span></div><div class="arr">→</div>
+        <div class="step"><b>Preview</b><span>/api/newsletters/[id]</span></div><div class="arr">→</div>
+        <div class="step gate"><b>Gate again</b><span>before sync / schedule / send</span></div><div class="arr">→</div>
+        <div class="step svc"><b>Mailchimp</b><span>campaign draft → test email → send</span></div><div class="arr">→</div>
+        <div class="step ok"><b>SENT</b><span>report: opens, clicks per tracked link</span></div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <h3>D · News aggregation → digest → promotion</h3>
+      <p>Discovered news is never newsletter content. Promotion by a curator is the boundary; third-party stories still need consent.</p>
+      <div class="chain">
+        <div class="step"><b>Scheduler / source.check_now</b><span>runAggregation · runSource</span></div><div class="arr">→</div>
+        <div class="step svc"><b>Adapters</b><span>RSS · website · LinkedIn · manual · API</span></div><div class="arr">→</div>
+        <div class="step svc"><b>Normalize + dedupe</b><span>canonical URL, content hash</span></div><div class="arr">→</div>
+        <div class="step svc"><b>Relevance</b><span>advisory only; AI optional</span></div><div class="arr">→</div>
+        <div class="step"><b>news_candidates</b><span>NEW → SURFACED</span></div><div class="arr">→</div>
+        <div class="step svc"><b>Digest → Slack / Discord</b><span>news_delivery_records stop repeats</span></div><div class="arr">→</div>
+        <div class="step human"><b>Promote · Save · Dismiss</b><span>@volta decides</span></div><div class="arr">→</div>
+        <div class="step ok"><b>content_items + revision</b><span>then consent evaluation</span></div>
+      </div>
+    </div>
+
+    <div class="states">
+      <div class="flow">
+        <h3>content_items.status</h3>
+        <div class="chain">
+          <span class="pill b">INBOX</span><span class="arr">→</span><span class="pill b">DRAFT</span><span class="arr">→</span><span class="pill y">PENDING_CONSENT</span><span class="arr">→</span><span class="pill g">APPROVED</span>
+        </div>
+        <p style="margin-top:10px">INBOX / DRAFT → <span class="pill r">REJECTED</span> · INBOX / APPROVED → <span class="pill">BACKLOG</span> (revisit_at) → overdue queue → back to DRAFT · <span class="pill">ARCHIVED</span></p>
+      </div>
+      <div class="flow">
+        <h3>consent_requests.status</h3>
+        <div class="chain"><span class="pill y">PENDING</span><span class="arr">→</span><span class="pill g">APPROVED</span></div>
+        <p style="margin-top:10px">PENDING → <span class="pill y">CHANGES_REQUESTED</span> · <span class="pill r">DECLINED</span> · <span class="pill r">REVOKED</span> · <span class="pill">EXPIRED</span>. consent_records: PENDING / GRANTED / REVOKED / EXPIRED.</p>
+      </div>
+      <div class="flow">
+        <h3>newsletters.status</h3>
+        <div class="chain"><span class="pill b">DRAFT</span><span class="arr">→</span><span class="pill y">SCHEDULED</span><span class="arr">→</span><span class="pill y">SENDING</span><span class="arr">→</span><span class="pill g">SENT</span></div>
+        <p style="margin-top:10px">Any state → <span class="pill">ARCHIVED</span>. Sections: FEATURED · STORIES · EVENTS · WINS · OPPORTUNITIES · COMMUNITY.</p>
+      </div>
+      <div class="flow">
+        <h3>founder_submissions / news_candidates</h3>
+        <div class="chain"><span class="pill b">RECEIVED</span><span class="arr">→</span><span class="pill y">TRIAGED</span><span class="arr">→</span><span class="pill g">PROMOTED</span><span class="pill r">REJECTED</span></div>
+        <div class="chain" style="margin-top:8px"><span class="pill b">NEW</span><span class="arr">→</span><span class="pill y">SURFACED</span><span class="arr">→</span><span class="pill">SAVED</span><span class="pill r">DISMISSED</span><span class="pill g">PROMOTED</span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Sources: README.md, agents/volta-generation-3-docs/*, agents/init_implementatiom/*, lib/db/schema.sql, app/ and lib/ layout.
+    Planned in the Gen 3 docs but not yet in <code>schema.sql</code>: <code>ecosystem_entities</code> (ghost table above),
+    <code>entity_relationships</code>, <code>news_candidate_entities</code>. <code>audit_logs</code> is polymorphic via
+    <code>subject_type</code> / <code>subject_id</code>, so it has no FK lines.
+  </footer>
+</main>
+
+<script>
+/* ---------------- tabs ---------------- */
+document.querySelectorAll('nav button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.querySelectorAll('nav button').forEach(function (x) { x.setAttribute('aria-selected', x === b); });
+    document.querySelectorAll('.panel').forEach(function (p) { p.classList.toggle('active', p.id === b.dataset.tab); });
+  });
+});
+
+var NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent, text) {
+  var n = document.createElementNS(NS, tag);
+  for (var k in attrs) n.setAttribute(k, attrs[k]);
+  if (text !== undefined) n.textContent = text;
+  if (parent) parent.appendChild(n);
+  return n;
+}
+
+/* ---------------- ERD ---------------- */
+var COLORS = { editorial: '#2563eb', consent: '#d97706', intake: '#0d9488', newsletter: '#7c3aed', news: '#16a34a', ops: '#64748b' };
+var W = 250, HH = 30, RH = 20;
+
+var TABLES = {
+  consent_records: { x: 30, y: 30, g: 'consent', f: [
+    ['id','uuid','PK'],['content_item_id','uuid','FK'],['contact_id','uuid','FK'],['revision_id','uuid','FK'],
+    ['consent_request_id','uuid','FK'],['content_hash','text',''],['status','varchar',''],['method','varchar',''],
+    ['evidence','text',''],['expires_at','timestamptz','']] },
+  consent_requests: { x: 30, y: 310, g: 'consent', f: [
+    ['id','uuid','PK'],['content_item_id','uuid','FK'],['revision_id','uuid','FK'],['contact_id','uuid','FK'],
+    ['token_hash','text','UK'],['status','text',''],['expires_at','timestamptz',''],['created_by','text','']] },
+  audit_logs: { x: 30, y: 580, g: 'ops', f: [
+    ['id','uuid','PK'],['actor','text',''],['action','text',''],['subject_type','text',''],
+    ['subject_id','text',''],['metadata','jsonb',''],['created_at','timestamptz','']] },
+
+  contacts: { x: 380, y: 30, g: 'editorial', f: [
+    ['id','uuid','PK'],['email','text','UK'],['name','text',''],['organization','text',''],['role','text','']] },
+  content_items: { x: 380, y: 230, g: 'editorial', f: [
+    ['id','uuid','PK'],['type','varchar',''],['title','text',''],['status','varchar',''],['featured','boolean',''],
+    ['revisit_at','timestamptz',''],['contact_id','uuid','FK'],['event_id','uuid','FK'],
+    ['current_revision_id','uuid','FK'],['approved_revision_id','uuid','FK']] },
+  content_revisions: { x: 380, y: 560, g: 'editorial', f: [
+    ['id','uuid','PK'],['content_item_id','uuid','FK'],['revision_number','int',''],['title','text',''],
+    ['body','text',''],['media','jsonb',''],['content_hash','text',''],['created_by','text','']] },
+
+  founder_submissions: { x: 730, y: 30, g: 'intake', f: [
+    ['id','uuid','PK'],['type','text',''],['title','text',''],['company_name','text',''],['contact_email','text',''],
+    ['identity_status','text',''],['submitted_via','text',''],['status','text',''],['promoted_content_item_id','uuid','FK']] },
+  events: { x: 730, y: 290, g: 'editorial', f: [
+    ['id','uuid','PK'],['title','text',''],['starts_at','timestamptz',''],['ends_at','timestamptz',''],
+    ['location','text',''],['external_id','text','']] },
+  newsletter_items: { x: 730, y: 470, g: 'newsletter', f: [
+    ['newsletter_id','uuid','PK,FK'],['content_item_id','uuid','PK,FK'],['section','varchar',''],['position','int','']] },
+  tracked_links: { x: 730, y: 630, g: 'newsletter', f: [
+    ['id','uuid','PK'],['newsletter_id','uuid','FK'],['content_item_id','uuid','FK'],['original_url','text',''],
+    ['destination_url','text',''],['utm_campaign','varchar',''],['clicks','int','']] },
+  newsletters: { x: 1080, y: 470, g: 'newsletter', f: [
+    ['id','uuid','PK'],['slug','text','UK'],['subject','text',''],['status','varchar',''],['scheduled_for','timestamptz',''],
+    ['sent_at','timestamptz',''],['mailchimp_campaign_id','text',''],['html_content','text','']] },
+
+  news_sources: { x: 30, y: 830, g: 'news', f: [
+    ['id','uuid','PK'],['name','text',''],['type','text',''],['url','text',''],['entity_id','uuid','FK'],
+    ['enabled','boolean',''],['polling_interval_minutes','int',''],['last_success_at','timestamptz',''],['last_error','text','']] },
+  news_candidates: { x: 380, y: 830, g: 'news', f: [
+    ['id','uuid','PK'],['source_id','uuid','FK'],['canonical_url','text','UK'],['title','text',''],['content_hash','text','UK'],
+    ['ai_summary','text',''],['ai_confidence','numeric',''],['source_ownership','text',''],['status','text',''],
+    ['promoted_content_item_id','uuid','FK']] },
+  news_delivery_records: { x: 730, y: 830, g: 'news', f: [
+    ['id','uuid','PK'],['candidate_id','uuid','FK'],['channel','text',''],['delivery_type','text',''],
+    ['delivered_at','timestamptz',''],['delivery_reference','text','']] },
+  ecosystem_entities: { x: 30, y: 1110, g: 'news', ghost: true, f: [
+    ['id','uuid','PK'],['type','text',''],['name','text',''],['contact_id','uuid','FK']] }
+};
+
+/* [fromTable.field, toTable.field, cardinality at from, cardinality at to, dashed] */
+var RELS = [
+  ['content_items.contact_id','contacts.id','N','0..1'],
+  ['content_items.event_id','events.id','N','0..1'],
+  ['content_items.current_revision_id','content_revisions.id','N','0..1'],
+  ['content_items.approved_revision_id','content_revisions.id','N','0..1'],
+  ['content_revisions.content_item_id','content_items.id','N','1'],
+  ['consent_records.content_item_id','content_items.id','N','1'],
+  ['consent_records.contact_id','contacts.id','N','1'],
+  ['consent_records.revision_id','content_revisions.id','N','0..1'],
+  ['consent_records.consent_request_id','consent_requests.id','N','0..1',true],
+  ['consent_requests.content_item_id','content_items.id','N','1'],
+  ['consent_requests.revision_id','content_revisions.id','N','1'],
+  ['consent_requests.contact_id','contacts.id','N','0..1'],
+  ['founder_submissions.promoted_content_item_id','content_items.id','0..1','0..1'],
+  ['newsletter_items.newsletter_id','newsletters.id','N','1'],
+  ['newsletter_items.content_item_id','content_items.id','N','1'],
+  ['tracked_links.newsletter_id','newsletters.id','N','1'],
+  ['tracked_links.content_item_id','content_items.id','N','1'],
+  ['news_candidates.source_id','news_sources.id','N','0..1'],
+  ['news_candidates.promoted_content_item_id','content_items.id','0..1','0..1'],
+  ['news_delivery_records.candidate_id','news_candidates.id','N','1'],
+  ['news_sources.entity_id','ecosystem_entities.id','N','0..1',true]
+];
+
+(function drawErd() {
+  var svg = document.getElementById('erdSvg');
+  var relLayer = el('g', {}, svg);
+  var tblLayer = el('g', {}, svg);
+
+  function tHeight(t) { return HH + t.f.length * RH + 6; }
+  function rowY(tn, field) {
+    var t = TABLES[tn];
+    var i = t.f.findIndex(function (r) { return r[0] === field; });
+    return t.y + HH + i * RH + RH / 2;
+  }
+
+  var tableEls = {};
+  Object.keys(TABLES).forEach(function (tn) {
+    var t = TABLES[tn], col = COLORS[t.g];
+    var g = el('g', { 'class': 'tbl' + (t.ghost ? ' ghost' : ''), 'data-t': tn }, tblLayer);
+    el('rect', { 'class': 'body', x: t.x, y: t.y, width: W, height: tHeight(t), rx: 8 }, g);
+    el('path', { d: 'M' + t.x + ',' + (t.y + HH) + ' V' + (t.y + 8) + ' a8,8 0 0 1 8,-8 H' + (t.x + W - 8) + ' a8,8 0 0 1 8,8 V' + (t.y + HH) + ' Z', fill: col }, g);
+    el('text', { 'class': 'tname', x: t.x + 12, y: t.y + 20 }, g, tn + (t.ghost ? '  (planned)' : ''));
+    t.f.forEach(function (r, i) {
+      var y = t.y + HH + i * RH;
+      if (i) el('line', { 'class': 'rowline', x1: t.x + 1, x2: t.x + W - 1, y1: y, y2: y }, g);
+      el('text', { 'class': 'flag ' + (r[2].indexOf('FK') >= 0 ? 'FK' : r[2]), x: t.x + 10, y: y + 14 }, g, r[2]);
+      el('text', { 'class': 'fname', x: t.x + 44, y: y + 14 }, g, r[0]);
+      el('text', { 'class': 'ftype', x: t.x + W - 10, y: y + 14 }, g, r[1]);
+    });
+    tableEls[tn] = g;
+  });
+
+  var loopCount = {};
+  var relEls = [];
+  RELS.forEach(function (r) {
+    var a = r[0].split('.'), b = r[1].split('.');
+    var ta = TABLES[a[0]], tb = TABLES[b[0]];
+    var sy = rowY(a[0], a[1]), ty = rowY(b[0], b[1]);
+    var sx, tx, d, cxs, cxe;
+    if (ta.x === tb.x) {
+      var key = [a[0], b[0]].sort().join('|');
+      var n = loopCount[key] = (loopCount[key] || 0) + 1;
+      var w = 40 + (n - 1) * 15 + (a[0] === 'news_candidates' ? 45 : 0);
+      sx = ta.x + W; tx = tb.x + W;
+      d = 'M' + sx + ',' + sy + ' C' + (sx + w) + ',' + sy + ' ' + (tx + w) + ',' + ty + ' ' + tx + ',' + ty;
+      cxs = sx + 10; cxe = tx + 10;
+    } else {
+      var left = ta.x < tb.x;
+      sx = left ? ta.x + W : ta.x; tx = left ? tb.x : tb.x + W;
+      var c = Math.max(45, Math.abs(tx - sx) / 2) * (left ? 1 : -1);
+      d = 'M' + sx + ',' + sy + ' C' + (sx + c) + ',' + sy + ' ' + (tx - c) + ',' + ty + ' ' + tx + ',' + ty;
+      cxs = sx + (left ? 8 : -8); cxe = tx + (left ? -8 : 8);
+    }
+    var path = el('path', { 'class': 'rel' + (r[4] ? ' dashed' : ''), d: d }, relLayer);
+    el('text', { 'class': 'card', x: cxs, y: sy - 4, 'text-anchor': cxs > sx ? 'start' : 'end' }, relLayer, r[2]);
+    el('text', { 'class': 'card', x: cxe, y: ty - 4, 'text-anchor': cxe > tx ? 'start' : 'end' }, relLayer, r[3]);
+    relEls.push({ path: path, a: a[0], b: b[0] });
+  });
+
+  Object.keys(tableEls).forEach(function (tn) {
+    var g = tableEls[tn];
+    g.addEventListener('mouseenter', function () {
+      var linked = {}; linked[tn] = 1;
+      relEls.forEach(function (r) {
+        var hit = r.a === tn || r.b === tn;
+        if (hit) { linked[r.a] = 1; linked[r.b] = 1; }
+        r.path.classList.toggle('hot', hit);
+        r.path.classList.toggle('dim', !hit);
+      });
+      Object.keys(tableEls).forEach(function (o) { tableEls[o].classList.toggle('dim', !linked[o]); });
+    });
+    g.addEventListener('mouseleave', function () {
+      relEls.forEach(function (r) { r.path.classList.remove('hot', 'dim'); });
+      Object.keys(tableEls).forEach(function (o) { tableEls[o].classList.remove('dim'); });
+    });
+  });
+})();
+
+/* ---------------- Service flow ---------------- */
+(function drawSvc() {
+  var svg = document.getElementById('svcSvg');
+  var defs = el('defs', {}, svg);
+  [['ar', '#475569'], ['arx', '#db2777'], ['ard', '#a16207']].forEach(function (m) {
+    var mk = el('marker', { id: m[0], viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, defs);
+    el('path', { d: 'M0,0 L10,5 L0,10 z', fill: m[1] }, mk);
+  });
+
+  function box(x, y, w, h, cls, title, sub1, sub2) {
+    var g = el('g', { 'class': 'b ' + cls }, svg);
+    el('rect', { x: x, y: y, width: w, height: h }, g);
+    var ty = sub1 ? y + 20 : y + h / 2 + 4;
+    el('text', { 'class': 't', x: x + 10, y: ty }, g, title);
+    if (sub1) el('text', { 'class': 's', x: x + 10, y: y + 36 }, g, sub1);
+    if (sub2) el('text', { 'class': 's', x: x + 10, y: y + 50 }, g, sub2);
+  }
+  function arrow(d, cls, label, lx, ly) {
+    var m = cls === 'ext' ? 'arx' : cls === 'db' ? 'ard' : 'ar';
+    el('path', { 'class': 'arrow ' + cls, d: d, 'marker-end': 'url(#' + m + ')' }, svg);
+    if (label) el('text', { 'class': 'albl', x: lx, y: ly, 'text-anchor': 'middle' }, svg, label);
+  }
+
+  /* column headings + bands */
+  [['Actors', 30, 190], ['Interfaces', 280, 250], ['Domain layer (lib/services · lib/*)', 600, 420], ['Persistence', 1085, 190], ['External', 1320, 180]].forEach(function (c) {
+    el('text', { 'class': 'colh', x: c[1], y: 28 }, svg, c[0]);
+  });
+  el('rect', { 'class': 'band', x: 600, y: 45, width: 420, height: 800 }, svg);
+
+  /* actors + interfaces */
+  var rows = [
+    ['Curator', 'Bader · Laura · Amy',
+     'Admin UI + Server Actions', '/admin · app/actions · /api/newsletters/[id]', '→ content · curation · newsletter · consent'],
+    ['Claude / MCP client', 'acts as @volta (trusted operator)',
+     '@volta MCP · Bearer volta:full', '/mcp/volta · OAuth /.well-known /authorize /token', '→ full tool surface via services'],
+    ['Founder AI agent', 'acts as @founder (anonymous)',
+     '@founder MCP · append-only', '/mcp/founder · rate limit · Zod validation', '→ submission-service (create only)'],
+    ['Founder / stakeholder', 'opens emailed preview link',
+     'Consent preview (public)', '/consent/[token] · hashed token', '→ consent-service'],
+    ['Public / partner submitter', 'students, ecosystem members',
+     'Public submission form', '/submit', '→ submission-service'],
+    ['Scheduler / cron', 'daily digest · polling',
+     'Workers / manual runs', 'runAggregation · runSource · sendDigest', '→ news pipeline · notifications']
+  ];
+  rows.forEach(function (r, i) {
+    var cy = 105 + 120 * i;
+    box(30, cy - 35, 190, 70, 'actor', r[0], r[1]);
+    box(280, cy - 40, 250, 80, 'iface', r[2], r[3], r[4]);
+    arrow('M220,' + cy + ' H278', '');
+    arrow('M530,' + cy + ' H598', '');
+  });
+  box(280, 800, 250, 44, 'lib', 'proxy.ts middleware', 'logs every request (production)');
+
+  /* domain services */
+  var L = 615, R = 815, BW = 190;
+  box(L, 75, BW, 66, 'svc', 'submission-service', 'intake · triage · promote');
+  box(R, 75, BW, 66, 'svc', 'content-service', 'items · revisions · backlog');
+  box(L, 160, BW, 66, 'svc', 'curation-service', 'quick capture · status moves');
+  box(R, 160, BW, 66, 'svc', 'consent-service', 'requests · tokens · approval txn');
+  box(L, 245, BW, 66, 'svc', 'newsletter-service', 'editions · items · send flow');
+  box(R, 245, BW, 66, 'svc', 'news-service', 'candidates · promote · sources');
+  box(L, 335, 390, 70, 'gate', 'publication-eligibility-service',
+      'single authority: consent required? current revision approved? revoked / expired?',
+      'blocks Mailchimp sync · schedule · send (structured blockingItems)');
+  box(L, 430, BW, 60, 'lib', 'audit-service', 'agent actions → audit_logs');
+  box(R, 430, BW, 60, 'lib', 'lib/security', 'rate-limit · env validation');
+  box(L, 505, BW, 60, 'lib', 'render-newsletter', 'Pug tables → Juice inline CSS');
+  box(R, 505, BW, 60, 'lib', 'tracked-links', 'UTM tags + tracked_links rows');
+  box(L, 580, 390, 60, 'lib', 'lib/news pipeline', 'adapters → normalize → dedupe → relevance (AI optional)');
+  box(L, 655, 390, 60, 'lib', 'lib/notifications', 'digest → Slack / Discord adapters · delivery tracking');
+  box(L, 730, 390, 60, 'lib', 'lib/mailchimp', 'campaign draft · test · send · mock mode without keys');
+
+  /* persistence */
+  box(1085, 185, 190, 80, 'db', 'Repository layer', 'lib/db/queries.ts (typed SQL)', 'pg pool · lib/db.ts');
+  box(1085, 300, 190, 200, 'db', 'PostgreSQL', 'editorial: content_items,', 'content_revisions, contacts, events');
+  ['consent: consent_requests,', '   consent_records', 'intake: founder_submissions', 'newsletter: newsletters,',
+   '   newsletter_items, tracked_links', 'news: news_sources, news_candidates,', '   news_delivery_records', 'ops: audit_logs'
+  ].forEach(function (line, i) {
+    el('text', { 'class': 's', 'xml:space': 'preserve', x: 1095, y: 372 + i * 14, style: 'white-space:pre' }, svg, line);
+  });
+  arrow('M1020,225 H1083', 'db', 'reads/writes', 1052, 215);
+  arrow('M1180,265 V298', 'db');
+
+  /* external */
+  box(1320, 517, 180, 55, 'ext', 'AI provider (optional)', 'summarize · classify · entities');
+  box(1320, 583, 180, 55, 'ext', 'News sources', 'RSS · websites · LinkedIn');
+  box(1320, 657, 180, 55, 'ext', 'Slack / Discord', 'webhooks');
+  box(1320, 732, 180, 55, 'ext', 'Mailchimp API', 'campaigns · lists · reports');
+  arrow('M1005,600 H1040 V545 H1318', 'ext opt', 'optional', 1180, 538);
+  arrow('M1318,610 H1007', 'ext', 'poll / fetch', 1160, 603);
+  arrow('M1005,685 H1318', 'ext', 'digest / alert', 1160, 678);
+  arrow('M1005,760 H1318', 'ext', 'sync · send · stats', 1160, 753);
+})();
+</script>
+</body>
+</html>

@@ -29,6 +29,7 @@ import {
   NewsDeliveryType,
   NewsSource,
   NewsSourceType,
+  DoNotFeature,
 } from '@/lib/types';
 import { buildTrackedUrl } from '@/lib/tracked-links';
 
@@ -54,6 +55,7 @@ function mapContentItem(row: any): ContentItem {
     updatedAt: new Date(row.updated_at).toISOString(),
     contactName: row.contact_name,
     contactEmail: row.contact_email,
+    contactOrganization: row.contact_organization ?? null,
     eventTitle: row.event_title,
     consentStatus: row.consent_status as ConsentStatus | null,
     consentId: row.consent_id,
@@ -232,6 +234,20 @@ function mapAuditLog(row: any): AuditLog {
   };
 }
 
+function mapDoNotFeature(row: any): DoNotFeature {
+  return {
+    id: row.id,
+    name: row.name,
+    // Selected as requested_at::text so it stays a calendar date ("YYYY-MM-DD")
+    // and never passes through a JS Date / timezone conversion.
+    requestedAt: row.requested_at,
+    note: row.note ?? null,
+    enabled: Boolean(row.enabled),
+    createdAt: new Date(row.created_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString(),
+  };
+}
+
 // Content Items
 export async function getContentItems(filters?: {
   status?: string;
@@ -243,6 +259,7 @@ export async function getContentItems(filters?: {
       ci.*,
       c.name AS contact_name,
       c.email AS contact_email,
+      c.organization AS contact_organization,
       e.title AS event_title,
       cr.id AS consent_id,
       cr.status AS consent_status,
@@ -289,6 +306,7 @@ export async function getContentItemById(id: string): Promise<ContentItem | null
       ci.*,
       c.name AS contact_name,
       c.email AS contact_email,
+      c.organization AS contact_organization,
       e.title AS event_title,
       cr.id AS consent_id,
       cr.status AS consent_status,
@@ -489,6 +507,7 @@ export async function getBacklogItems(): Promise<ContentItem[]> {
       ci.*,
       c.name AS contact_name,
       c.email AS contact_email,
+      c.organization AS contact_organization,
       e.title AS event_title,
       cr.id AS consent_id,
       cr.status AS consent_status,
@@ -909,6 +928,7 @@ export async function getNewsletterItemsWithContent(
       ci.*,
       c.name        AS contact_name,
       c.email       AS contact_email,
+      c.organization AS contact_organization,
       e.title       AS event_title,
       cr.id         AS consent_id,
       cr.status     AS consent_status,
@@ -1190,6 +1210,33 @@ export async function updateNewsSourceCheckResult(
   );
 }
 
+export async function updateNewsSourceEnabled(
+  id: string,
+  enabled: boolean
+): Promise<NewsSource | null> {
+  const res = await query(
+    `
+      UPDATE news_sources
+      SET enabled = $2,
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `,
+    [id, enabled]
+  );
+  return res.rows.length ? mapNewsSource(res.rows[0]) : null;
+}
+
+export async function updateNewsSourceEligibility(
+  id: string,
+  state: { isEnabled?: boolean; enabled?: boolean; success?: boolean }
+): Promise<NewsSource | null> {
+  const isEnabled = state.isEnabled ?? state.enabled ?? true;
+  return updateNewsSourceEnabled(id, isEnabled);
+}
+
+export const updateNewsSourceElegibility = updateNewsSourceEligibility;
+
 export async function deleteNewsSource(id: string): Promise<void> {
   await query(
     `
@@ -1387,4 +1434,135 @@ export async function createAuditLog(data: {
     ]
   );
   return mapAuditLog(res.rows[0]);
+}
+
+
+export async function insertMigrationScript(data: {
+  migration: string;
+  name: string;
+  Sql: string;
+}):Promise<string> {
+  const res = await query(
+    `
+      INSERT INTO migrations (migration, name, Sql)
+      VALUES ($1, $2, $3)
+      RETURNING *
+    `,
+    [data.migration, data.name, data.Sql]
+  );
+  return res.command;
+}
+
+// Do Not Feature
+const DO_NOT_FEATURE_COLUMNS =
+  'id, name, requested_at::text AS requested_at, note, enabled, created_at, updated_at';
+
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function assertIsoDate(value: string): string {
+  const trimmed = value.trim();
+  if (!ISO_DATE_PATTERN.test(trimmed)) {
+    throw new Error(`requestedAt must be a date in YYYY-MM-DD format, got "${value}"`);
+  }
+  return trimmed;
+}
+
+export async function createDoNotFeature(data: {
+  name: string;
+  requestedAt?: string;
+  note?: string | null;
+  enabled?: boolean;
+}): Promise<DoNotFeature> {
+  const requestedAt = data.requestedAt ? assertIsoDate(data.requestedAt) : null;
+  const enabled = data.enabled !== undefined ? data.enabled : true;
+  const res = await query(
+    `
+      INSERT INTO do_not_feature (name, requested_at, note, enabled)
+      VALUES ($1, COALESCE($2::date, CURRENT_DATE), $3, $4)
+      RETURNING ${DO_NOT_FEATURE_COLUMNS}
+    `,
+    [data.name.trim(), requestedAt, data.note ?? null, enabled]
+  );
+  return mapDoNotFeature(res.rows[0]);
+}
+
+export const insertDoNotFeature = createDoNotFeature;
+
+export async function updateDoNotFeature(
+  id: string,
+  data: Partial<{
+    name: string;
+    requestedAt: string;
+    note: string | null;
+    enabled: boolean;
+  }>
+): Promise<DoNotFeature | null> {
+  const setClauses: string[] = [];
+  const params: any[] = [id];
+
+  const fieldMap: Record<string, string> = {
+    name: 'name',
+    requestedAt: 'requested_at',
+    note: 'note',
+    enabled: 'enabled',
+  };
+
+  for (const [key, dbCol] of Object.entries(fieldMap)) {
+    if (key in data && (data as any)[key] !== undefined) {
+      let val = (data as any)[key];
+      if (key === 'requestedAt') val = assertIsoDate(val);
+      if (key === 'name' && typeof val === 'string') val = val.trim();
+      params.push(val);
+      setClauses.push(`${dbCol} = $${params.length}`);
+    }
+  }
+
+  if (setClauses.length === 0) return getDoNotFeatureById(id);
+
+  setClauses.push('updated_at = NOW()');
+  const sql = `UPDATE do_not_feature SET ${setClauses.join(', ')} WHERE id = $1 RETURNING ${DO_NOT_FEATURE_COLUMNS}`;
+  const res = await query(sql, params);
+  return res.rows.length ? mapDoNotFeature(res.rows[0]) : null;
+}
+
+export async function getDoNotFeatureById(id: string): Promise<DoNotFeature | null> {
+  const res = await query(`SELECT ${DO_NOT_FEATURE_COLUMNS} FROM do_not_feature WHERE id = $1`, [id]);
+  return res.rows.length ? mapDoNotFeature(res.rows[0]) : null;
+}
+
+export async function getDoNotFeatureByName(name: string): Promise<DoNotFeature | null> {
+  const res = await query(
+    `SELECT ${DO_NOT_FEATURE_COLUMNS} FROM do_not_feature WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+    [name.trim()]
+  );
+  return res.rows.length ? mapDoNotFeature(res.rows[0]) : null;
+}
+
+export async function getDoNotFeatureList(filters?: {
+  enabled?: boolean;
+  search?: string;
+}): Promise<DoNotFeature[]> {
+  let sql = `SELECT ${DO_NOT_FEATURE_COLUMNS} FROM do_not_feature WHERE 1=1`;
+  const params: any[] = [];
+
+  if (filters?.enabled !== undefined) {
+    params.push(filters.enabled);
+    sql += ` AND enabled = $${params.length}`;
+  }
+
+  if (filters?.search) {
+    params.push(`%${filters.search.trim()}%`);
+    sql += ` AND (name ILIKE $${params.length} OR note ILIKE $${params.length})`;
+  }
+
+  sql += ` ORDER BY created_at DESC`;
+  const res = await query(sql, params);
+  return res.rows.map(mapDoNotFeature);
+}
+
+export const listDoNotFeature = getDoNotFeatureList;
+
+export async function deleteDoNotFeature(id: string): Promise<boolean> {
+  const res = await query(`DELETE FROM do_not_feature WHERE id = $1 RETURNING id`, [id]);
+  return res.rows.length > 0;
 }

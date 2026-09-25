@@ -6,6 +6,7 @@ import {
 import { createContentItemFromIntake } from './content-service';
 import { ContentItemType } from '@/lib/types';
 import { auditAgentAction } from './audit-service';
+import { checkDoNotFeature, formatDoNotFeatureError } from './do-not-feature-service';
 
 function mapSubmissionTypeToContentType(type: string): ContentItemType {
   if (type === 'EVENTS') return 'EVENT';
@@ -27,6 +28,22 @@ export async function promoteFounderSubmission(id: string) {
   const submission = await getFounderSubmissionById(id);
   if (!submission) {
     return { success: false as const, error: 'Submission not found' };
+  }
+
+  const doNotFeature = await checkDoNotFeature({
+    contactOrganization: submission.companyName,
+    contactName: [submission.contactName, submission.founderName],
+    title: submission.title,
+    summary: [submission.summary, submission.notes],
+    body: submission.body,
+    url: submission.sourceUrls,
+  });
+  if (doNotFeature.blocked) {
+    return {
+      success: false as const,
+      error: formatDoNotFeatureError(doNotFeature.matches),
+      doNotFeatureMatches: doNotFeature.matches,
+    };
   }
 
   const item = await createContentItemFromIntake({

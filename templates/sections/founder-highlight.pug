@@ -1,15 +1,18 @@
+//- Hero card: purple + teal glows on black. Clients without gradient
+//- support get a flat #05070a panel with the same border.
+- var heroBg = 'radial-gradient(120% 90% at 0% 70%,rgba(91,43,255,0.32),rgba(0,0,0,0) 55%),radial-gradient(90% 80% at 100% 0%,rgba(25,160,170,0.28),rgba(0,0,0,0) 60%)'
+
 if items && items.length > 0
   each item in items
-    div(class="item-card" style="background-color: #0f172a; border: 2px solid #f59e0b; border-radius: 8px; padding: 24px; margin-bottom: 28px;")
-      table(role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%")
-        tr
-          td
-            span(style="display: inline-block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #f59e0b; margin-bottom: 8px;") &star; FEATURED BUILDER STORY
-            h2(class="item-title" style="font-size: 20px; font-weight: 700; color: #ffffff; margin: 6px 0 12px 0; line-height: 1.3;") #{item.title}
-            if item.summary
-              p(class="item-summary" style="font-size: 15px; color: #e2e8f0; line-height: 1.6; margin: 0 0 16px 0;") #{item.summary}
-            if item.body
-              div(style="font-size: 14px; color: #94a3b8; line-height: 1.5; margin: 0 0 16px 0; border-left: 2px solid #334155; padding-left: 12px;")
-                p(style="margin: 0;") #{item.body}
-            if item.url || item.trackedUrl
-              a(href=(item.trackedUrl || item.url) class="item-link" style="display: inline-block; background-color: #f59e0b; color: #020617; font-size: 13px; font-weight: 700; text-decoration: none; padding: 8px 16px; border-radius: 4px;") Read Founder Breakdown &rarr;
+    table(role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 8px 0;")
+      tr
+        td(bgcolor="#05070a" style=`padding:28px 26px 26px 26px;border:1px solid #1c2226;border-radius:18px 18px 18px 0;background-color:#05070a;background-image:${heroBg};`)
+          +eyebrow('Featured builder story')
+          if item.contactName
+            div(style=`font-family:${VOLTA_FONT};font-size:14px;color:#9aa0a6;margin-top:6px;`)
+              | #{item.contactName}#{item.contactOrganization ? ', ' + item.contactOrganization : ''}
+          h2(class="hero-title" style=`font-family:${VOLTA_FONT};font-size:30px;font-weight:700;letter-spacing:-0.75px;line-height:1.1;color:#ffffff;margin:10px 0 12px 0;`)= item.title
+          if item.summary
+            p(style=`font-family:${VOLTA_FONT};font-size:16px;line-height:1.55;color:#d7dadd;margin:0 0 18px 0;`)= item.summary
+          if item.url || item.trackedUrl
+            +pillButton(item.trackedUrl || item.url, 'Read the story')

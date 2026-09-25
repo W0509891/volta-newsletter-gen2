@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { requireAdmin } from '@/lib/auth/session';
 import {
   attachContentItemToNewsletter,
   batchTransitionContentItems,
@@ -30,6 +31,7 @@ export async function transitionItemStatusAction(
     revisitAt?: string;
   }
 ) {
+  await requireAdmin();
   await transitionContentItemStatus({
     id,
     status: newStatus,
@@ -51,6 +53,7 @@ export async function batchUpdateItemsAction(
     rejectionReason?: string;
   }
 ) {
+  await requireAdmin();
   const result = await batchTransitionContentItems(ids, action, options);
 
   revalidatePath('/admin');
@@ -72,6 +75,7 @@ export async function saveItemDetailsAction(
     revisitAt?: string | null;
   }
 ) {
+  await requireAdmin();
   await saveContentItemDetails(id, data);
 
   revalidatePath('/admin');
@@ -118,6 +122,7 @@ export async function createConsentRequestAction(data: {
   recipientName?: string | null;
   recipientEmail?: string | null;
 }) {
+  await requireAdmin();
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.APP_URL ||
@@ -149,18 +154,28 @@ export async function attachItemToNewsletterAction(
   section: NewsletterSection,
   position: number = 0
 ) {
-  await attachContentItemToNewsletter(newsletterId, contentItemId, section, position);
+  await requireAdmin();
+  const result = await attachContentItemToNewsletter(
+    newsletterId,
+    contentItemId,
+    section,
+    position
+  );
+  if (!result.success) {
+    return { success: false as const, error: result.error };
+  }
 
   revalidatePath('/admin');
   revalidatePath(`/admin/items/${contentItemId}`);
   revalidatePath(`/admin/newsletters/${newsletterId}`);
-  return { success: true };
+  return { success: true as const };
 }
 
 export async function detachItemFromNewsletterAction(
   newsletterId: string,
   contentItemId: string
 ) {
+  await requireAdmin();
   await detachContentItemFromNewsletter(newsletterId, contentItemId);
 
   revalidatePath('/admin');

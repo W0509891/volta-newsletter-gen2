@@ -51,6 +51,7 @@ export async function createPreviewConsentRequest(data: {
     throw new Error('Content revision not found');
   }
 
+  //MAKES TOKEN INTO B64
   const token = crypto.randomBytes(32).toString('base64url');
   const expiresAt = new Date(
     Date.now() + (data.expiresInDays || 14) * 24 * 60 * 60 * 1000

@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Volta MCP Service Relationships</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #f3f6f8;
+      --surface: #ffffff;
+      --ink: #17212d;
+      --muted: #617083;
+      --line: #cad5df;
+      --accent: #126b55;
+      --shadow: 0 14px 34px rgba(23, 33, 45, 0.09);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1600px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 34px 0 52px;
+    }
+
+    h1,
+    h2,
+    p {
+      margin: 0;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
+      gap: 30px;
+      align-items: end;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      max-width: 900px;
+      font-size: clamp(2rem, 4vw, 4.25rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .lede {
+      max-width: 880px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+
+    .key {
+      border-left: 4px solid var(--accent);
+      padding: 4px 0 4px 17px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .key strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.78rem;
+    }
+
+    .diagram-shell {
+      overflow: auto;
+      min-height: 740px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .diagram-frame {
+      min-width: 1320px;
+      padding: 28px;
+    }
+
+    .mermaid {
+      display: flex;
+      justify-content: center;
+      min-height: 680px;
+    }
+
+    .mermaid svg {
+      width: 100%;
+      min-width: 1240px;
+      height: auto;
+      max-width: none !important;
+    }
+
+    .source {
+      margin-top: 22px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    summary {
+      padding: 16px 18px;
+      cursor: pointer;
+      color: var(--ink);
+      font-weight: 750;
+    }
+
+    pre {
+      overflow: auto;
+      margin: 0;
+      padding: 20px;
+      border-top: 1px solid var(--line);
+      background: #17212d;
+      color: #eef5f7;
+      font: 0.83rem/1.55 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    footer {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 860px) {
+      main {
+        width: min(100% - 24px, 1600px);
+        padding-top: 24px;
+      }
+
+      header {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      main {
+        width: 100%;
+        padding: 0;
+      }
+
+      .diagram-shell,
+      .source {
+        box-shadow: none;
+      }
+
+      .source,
+      footer {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Volta MCP Service Relationships</h1>
+        <p class="lede">
+          A service topology showing which Volta components own authentication, MCP transport,
+          business rules, persistence, rendering, publishing, and external delivery.
+        </p>
+      </div>
+      <p class="key">
+        <strong>Reading the map</strong>
+        Solid arrows are runtime calls. Dashed arrows are discovery or credential relationships.
+        Subgraphs represent ownership and trust boundaries, not a time sequence.
+      </p>
+    </header>
+
+    <section class="diagram-shell" aria-label="Volta MCP service relationship diagram">
+      <div class="diagram-frame">
+        <pre class="mermaid">
+flowchart LR
+  subgraph clients["AI + Human Clients"]
+    claude["Claude Web Client<br/>MCP-aware AI chatbot"]
+    admin["Volta Admin UI<br/>Curator workflows"]
+    public["Public Forms<br/>Submission + consent"]
+  end
+
+  subgraph edge["Next.js Access Layer"]
+    oauth["OAuth Compatibility Service<br/>metadata + /authorize + /token"]
+    mcpRoute["Volta MCP Gateway<br/>/mcp/volta"]
+    appRoutes["App Routes + Server Actions<br/>admin + public endpoints"]
+  end
+
+  subgraph mcp["MCP Application Boundary"]
+    toolRegistry["Volta MCP Tool Registry<br/>schemas + dispatch + structured results"]
+    skillCatalog["Volta Skills Resource<br/>skills://catalog"]
+  end
+
+  subgraph domain["Volta Domain Services"]
+    contentSvc["Content Service<br/>intake + state transitions + assembly"]
+    consentSvc["Consent Service<br/>revision-specific approval"]
+    curationSvc["Curation Service<br/>founder submission review"]
+    newsSvc["News Service<br/>sources + candidates + promotion"]
+    newsletterSvc["Newsletter Service<br/>create + render + sync + send + reports"]
+    eligibilitySvc["Publication Eligibility Service<br/>consent + content gates"]
+    notificationSvc["Notification Service<br/>digest build + delivery records"]
+    auditSvc["Audit Service<br/>agent action history"]
+  end
+
+  subgraph adapters["Infrastructure Adapters"]
+    queries["PostgreSQL Query Layer<br/>lib/db/queries.ts"]
+    renderer["Email Rendering Adapter<br/>Pug + Juice + tracked URLs"]
+    mailchimpAdapter["Mailchimp Adapter<br/>campaigns + sends + reports"]
+    newsAggregator["News Aggregator<br/>RSS + website sources"]
+    channelAdapters["Channel Adapters<br/>Slack + Discord webhooks"]
+  end
+
+  subgraph systems["External Systems"]
+    postgres[("PostgreSQL<br/>volta_email_2")]
+    mailchimp["Mailchimp Marketing API"]
+    sources["RSS + Web Sources"]
+    channels["Slack + Discord"]
+  end
+
+  claude -. "OAuth discovery + PKCE" .-> oauth
+  oauth -. "bearer credential" .-> claude
+  claude -->|"MCP over HTTPS"| mcpRoute
+  admin -->|"authenticated app requests"| appRoutes
+  public -->|"submission + consent responses"| appRoutes
+
+  mcpRoute -->|"authorized transport"| toolRegistry
+  toolRegistry -->|"resource read"| skillCatalog
+  toolRegistry -->|"content.*"| contentSvc
+  toolRegistry -->|"consent.*"| consentSvc
+  toolRegistry -->|"submission.*"| curationSvc
+  toolRegistry -->|"news.*"| newsSvc
+  toolRegistry -->|"newsletter.*"| newsletterSvc
+  toolRegistry -->|"delivery.*"| notificationSvc
+
+  appRoutes --> contentSvc
+  appRoutes --> consentSvc
+  appRoutes --> curationSvc
+  appRoutes --> newsSvc
+  appRoutes --> newsletterSvc
+
+  newsletterSvc -->|"enforce before sync/send"| eligibilitySvc
+  contentSvc --> queries
+  consentSvc --> queries
+  curationSvc --> queries
+  newsSvc --> queries
+  newsletterSvc --> queries
+  eligibilitySvc --> queries
+  notificationSvc --> queries
+  auditSvc --> queries
+
+  newsSvc -->|"collect candidates"| newsAggregator
+  newsletterSvc -->|"compile email HTML"| renderer
+  newsletterSvc -->|"campaign operations"| mailchimpAdapter
+  notificationSvc -->|"record agent action"| auditSvc
+  notificationSvc -->|"send digest"| channelAdapters
+
+  queries -->|"SQL via pg pool"| postgres
+  renderer -->|"read/write tracked links"| queries
+  mailchimpAdapter -->|"Marketing API"| mailchimp
+  newsAggregator -->|"fetch"| sources
+  channelAdapters -->|"HTTPS webhooks"| channels
+
+  classDef client fill:#e7f4f8,stroke:#176b87,color:#17212d,stroke-width:2px;
+  classDef edgeSvc fill:#f0ecfa,stroke:#6656a3,color:#17212d,stroke-width:2px;
+  classDef mcpSvc fill:#e8f5f0,stroke:#16705a,color:#17212d,stroke-width:2px;
+  classDef domainSvc fill:#fff3e6,stroke:#ad6318,color:#17212d,stroke-width:2px;
+  classDef adapter fill:#f8edf0,stroke:#a53e4d,color:#17212d,stroke-width:2px;
+  classDef external fill:#f0f3f6,stroke:#536579,color:#17212d,stroke-width:2px;
+
+  class claude,admin,public client;
+  class oauth,mcpRoute,appRoutes edgeSvc;
+  class toolRegistry,skillCatalog mcpSvc;
+  class contentSvc,consentSvc,curationSvc,newsSvc,newsletterSvc,eligibilitySvc,notificationSvc,auditSvc domainSvc;
+  class queries,renderer,mailchimpAdapter,newsAggregator,channelAdapters adapter;
+  class postgres,mailchimp,sources,channels external;
+        </pre>
+      </div>
+    </section>
+
+    <details class="source">
+      <summary>View Mermaid source</summary>
+      <pre id="source-output"></pre>
+    </details>
+
+    <footer>
+      Internal architecture artifact for Volta Newsletter Gen 2. Mermaid rendering requires network access to load the pinned renderer.
+    </footer>
+  </main>
+
+  <script>
+    const diagram = document.querySelector(".mermaid");
+    document.querySelector("#source-output").textContent = diagram.textContent.trim();
+  </script>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: "strict",
+      theme: "base",
+      flowchart: {
+        curve: "basis",
+        htmlLabels: true,
+        nodeSpacing: 28,
+        rankSpacing: 54,
+        useMaxWidth: false
+      },
+      themeVariables: {
+        background: "#ffffff",
+        primaryTextColor: "#17212d",
+        lineColor: "#718196",
+        clusterBkg: "#f8fafb",
+        clusterBorder: "#aebbc8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+        fontSize: "14px"
+      }
+    });
+  </script>
+</body>
+</html>

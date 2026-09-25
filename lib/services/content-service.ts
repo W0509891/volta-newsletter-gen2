@@ -3,6 +3,7 @@ import {
   createContentItem,
   detachItemFromNewsletter,
   findOrCreateContact,
+  getContentItemById,
   updateContentItem,
 } from '@/lib/db/queries';
 import {
@@ -10,6 +11,11 @@ import {
   ContentItemType,
   NewsletterSection,
 } from '@/lib/types';
+import {
+  checkDoNotFeature,
+  doNotFeatureSubjectFromContentItem,
+  formatDoNotFeatureError,
+} from './do-not-feature-service';
 
 export interface TransitionContentItemStatusInput {
   id: string;
@@ -125,7 +131,22 @@ export async function attachContentItemToNewsletter(
   section: NewsletterSection,
   position: number = 0
 ) {
+  const item = await getContentItemById(contentItemId);
+  if (!item) {
+    return { success: false as const, error: 'Content item not found' };
+  }
+
+  const doNotFeature = await checkDoNotFeature(doNotFeatureSubjectFromContentItem(item));
+  if (doNotFeature.blocked) {
+    return {
+      success: false as const,
+      error: formatDoNotFeatureError(doNotFeature.matches),
+      doNotFeatureMatches: doNotFeature.matches,
+    };
+  }
+
   await attachItemToNewsletter(newsletterId, contentItemId, section, position);
+  return { success: true as const };
 }
 
 export async function detachContentItemFromNewsletter(

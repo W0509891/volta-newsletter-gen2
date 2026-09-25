@@ -1,0 +1,679 @@
+i me<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Volta MCP Chatbot Swimlane Flowchart</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --paper: #ffffff;
+      --ink: #17202e;
+      --muted: #667386;
+      --line: #cdd6e1;
+      --lane-user: #1b6ca8;
+      --lane-auth: #6a54a3;
+      --lane-mcp: #237358;
+      --lane-app: #a45f13;
+      --lane-ext: #93424c;
+      --shadow: 0 14px 34px rgba(23, 32, 46, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 34px 24px 56px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 24px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      max-width: 860px;
+      font-size: clamp(2rem, 3.5vw, 3.8rem);
+      line-height: 1.03;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 840px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    .legend {
+      min-width: 260px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .legend h2 {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: 14px 1fr;
+      gap: 9px;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .legend-row + .legend-row {
+      margin-top: 7px;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: var(--lane-user);
+    }
+
+    .dot.auth { background: var(--lane-auth); }
+    .dot.mcp { background: var(--lane-mcp); }
+    .dot.app { background: var(--lane-app); }
+    .dot.ext { background: var(--lane-ext); }
+
+    .chart-shell {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .swimlanes {
+      min-width: 1320px;
+      display: grid;
+      grid-template-columns: 74px repeat(5, minmax(210px, 1fr));
+      grid-auto-rows: minmax(96px, auto);
+    }
+
+    .corner,
+    .lane-head,
+    .time,
+    .cell {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .corner {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      background: #eef3f8;
+    }
+
+    .lane-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      padding: 14px 14px 12px;
+      color: #ffffff;
+      font-weight: 760;
+      line-height: 1.15;
+    }
+
+    .lane-head small {
+      display: block;
+      margin-top: 5px;
+      font-size: 0.78rem;
+      font-weight: 520;
+      opacity: 0.88;
+    }
+
+    .lane-head.user { background: var(--lane-user); }
+    .lane-head.auth { background: var(--lane-auth); }
+    .lane-head.mcp { background: var(--lane-mcp); }
+    .lane-head.app { background: var(--lane-app); }
+    .lane-head.ext { background: var(--lane-ext); }
+
+    .time {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      padding: 12px 8px;
+      background: #eef3f8;
+      color: #405064;
+      font-size: 0.78rem;
+      font-weight: 760;
+      text-align: center;
+    }
+
+    .cell {
+      position: relative;
+      min-height: 96px;
+      padding: 13px;
+      background: #ffffff;
+    }
+
+    .cell.alt {
+      background: #fbfcfe;
+    }
+
+    .node {
+      position: relative;
+      min-height: 70px;
+      padding: 13px 14px;
+      border: 1px solid #d5dde8;
+      background: #ffffff;
+      box-shadow: 0 8px 18px rgba(23, 32, 46, 0.06);
+    }
+
+    .node strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.94rem;
+      line-height: 1.2;
+    }
+
+    .node span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.38;
+    }
+
+    .node.user { border-top: 5px solid var(--lane-user); }
+    .node.auth { border-top: 5px solid var(--lane-auth); }
+    .node.mcp { border-top: 5px solid var(--lane-mcp); }
+    .node.app { border-top: 5px solid var(--lane-app); }
+    .node.ext { border-top: 5px solid var(--lane-ext); }
+    .node.warning { border-top-color: #bf7b16; background: #fffaf0; }
+    .node.stop { border-top-color: #b33d42; background: #fff6f6; }
+
+    .arrow-right::after,
+    .arrow-left::after,
+    .arrow-down::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .arrow-right::after {
+      top: 50%;
+      right: -15px;
+      width: 28px;
+      border-top: 2px solid #7e8da1;
+    }
+
+    .arrow-right::before {
+      content: "";
+      position: absolute;
+      top: calc(50% - 5px);
+      right: -17px;
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid #7e8da1;
+      border-right: 2px solid #7e8da1;
+      transform: rotate(45deg);
+      pointer-events: none;
+    }
+
+    .arrow-left::after {
+      top: 50%;
+      left: -15px;
+      width: 28px;
+      border-top: 2px solid #7e8da1;
+    }
+
+    .arrow-left::before {
+      content: "";
+      position: absolute;
+      top: calc(50% - 5px);
+      left: -17px;
+      width: 10px;
+      height: 10px;
+      border-bottom: 2px solid #7e8da1;
+      border-left: 2px solid #7e8da1;
+      transform: rotate(45deg);
+      pointer-events: none;
+    }
+
+    .arrow-down::after {
+      left: 50%;
+      bottom: -16px;
+      height: 30px;
+      border-left: 2px solid #7e8da1;
+    }
+
+    .arrow-down::before {
+      content: "";
+      position: absolute;
+      left: calc(50% - 5px);
+      bottom: -18px;
+      width: 10px;
+      height: 10px;
+      border-right: 2px solid #7e8da1;
+      border-bottom: 2px solid #7e8da1;
+      transform: rotate(45deg);
+      pointer-events: none;
+    }
+
+    code {
+      padding: 2px 5px;
+      background: #edf2f7;
+      border: 1px solid #d9e2ec;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.86em;
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .note {
+      padding: 17px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .note h2 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    .note p,
+    .note li {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    ul {
+      margin: 8px 0 0;
+      padding-left: 19px;
+    }
+
+    li + li {
+      margin-top: 6px;
+    }
+
+    .footer {
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        padding: 24px 14px 42px;
+      }
+
+      header,
+      .notes {
+        display: block;
+      }
+
+      .legend,
+      .note + .note {
+        margin-top: 16px;
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      main {
+        max-width: none;
+        padding: 12px;
+      }
+
+      .chart-shell,
+      .legend,
+      .note {
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Volta MCP Chatbot Swimlane Flowchart</h1>
+        <p class="subtitle">
+          A step-by-step operational flow for connecting an AI chat client to the Volta Newsletter MCP server,
+          authorizing it through the current PKCE shim, and executing protected newsletter workflows.
+        </p>
+      </div>
+      <aside class="legend" aria-label="Legend">
+        <h2>Lane Legend</h2>
+        <div class="legend-row"><span class="dot"></span><span>User and AI chatbot client</span></div>
+        <div class="legend-row"><span class="dot auth"></span><span>OAuth discovery and token endpoints</span></div>
+        <div class="legend-row"><span class="dot mcp"></span><span>MCP route, transport, and tools</span></div>
+        <div class="legend-row"><span class="dot app"></span><span>Volta business services</span></div>
+        <div class="legend-row"><span class="dot ext"></span><span>Postgres, Mailchimp, Slack, Discord</span></div>
+      </aside>
+    </header>
+
+    <section class="chart-shell" aria-label="Swimlane flowchart">
+      <div class="swimlanes">
+        <div class="corner"></div>
+        <div class="lane-head user">User + AI Chatbot<small>Claude web client or another MCP-aware assistant</small></div>
+        <div class="lane-head auth">OAuth Shim<small>Next.js routes for discovery, authorize, token</small></div>
+        <div class="lane-head mcp">MCP Gateway<small><code>/mcp/volta</code> and MCP SDK transport</small></div>
+        <div class="lane-head app">Volta App Services<small>Domain logic and server-side gates</small></div>
+        <div class="lane-head ext">External Systems<small>Database, Mailchimp, Slack, Discord</small></div>
+
+        <div class="time">T0<br>Setup</div>
+        <div class="cell">
+          <div class="node user arrow-right">
+            <strong>Add MCP server URL</strong>
+            <span>User configures chatbot with <code>https://domain.com/mcp/volta</code>.</span>
+          </div>
+        </div>
+        <div class="cell alt"></div>
+        <div class="cell">
+          <div class="node mcp arrow-left arrow-down">
+            <strong>Initial protected request</strong>
+            <span><code>/mcp/volta</code> rejects missing bearer token with <code>401</code>.</span>
+          </div>
+        </div>
+        <div class="cell alt"></div>
+        <div class="cell"></div>
+
+        <div class="time">T1<br>Discover</div>
+        <div class="cell alt">
+          <div class="node user arrow-right">
+            <strong>Read auth challenge</strong>
+            <span>Chatbot follows <code>WWW-Authenticate</code> resource metadata pointer.</span>
+          </div>
+        </div>
+        <div class="cell">
+          <div class="node auth arrow-down">
+            <strong>Protected resource metadata</strong>
+            <span><code>/.well-known/oauth-protected-resource/mcp/volta</code> returns resource and authorization server.</span>
+          </div>
+        </div>
+        <div class="cell alt"></div>
+        <div class="cell"></div>
+        <div class="cell alt"></div>
+
+        <div class="time">T2<br>Authorize</div>
+        <div class="cell">
+          <div class="node user arrow-right">
+            <strong>Start PKCE flow</strong>
+            <span>Client opens <code>/authorize</code> with client ID, redirect URI, state, and S256 challenge.</span>
+          </div>
+        </div>
+        <div class="cell alt">
+          <div class="node auth arrow-left arrow-down">
+            <strong>Validate auth request</strong>
+            <span>Checks <code>client_id</code>, allowed redirect URI, <code>response_type=code</code>, and PKCE method.</span>
+          </div>
+        </div>
+        <div class="cell"></div>
+        <div class="cell alt"></div>
+        <div class="cell"></div>
+
+        <div class="time">T3<br>Code</div>
+        <div class="cell alt">
+          <div class="node user arrow-right">
+            <strong>Receive callback</strong>
+            <span>Chatbot receives <code>code</code> and original <code>state</code> at its callback endpoint.</span>
+          </div>
+        </div>
+        <div class="cell">
+          <div class="node auth arrow-left arrow-down">
+            <strong>Issue signed code</strong>
+            <span>Server creates a short-lived HMAC-signed stateless code tied to challenge and redirect URI.</span>
+          </div>
+        </div>
+        <div class="cell alt"></div>
+        <div class="cell"></div>
+        <div class="cell alt"></div>
+
+        <div class="time">T4<br>Token</div>
+        <div class="cell">
+          <div class="node user arrow-right">
+            <strong>Exchange authorization code</strong>
+            <span>Posts to <code>/token</code> with code, client ID, redirect URI, grant type, and PKCE verifier.</span>
+          </div>
+        </div>
+        <div class="cell alt">
+          <div class="node auth arrow-left">
+            <strong>Verify PKCE and code</strong>
+            <span>Confirms signature, expiry, client binding, redirect binding, and verifier hash.</span>
+          </div>
+        </div>
+        <div class="cell">
+          <div class="node mcp arrow-left">
+            <strong>Bearer token ready</strong>
+            <span>Token response returns <code>VOLTA_MCP_TOKEN</code> as the bearer credential for MCP.</span>
+          </div>
+        </div>
+        <div class="cell alt"></div>
+        <div class="cell"></div>
+
+        <div class="time">T5<br>Tool Call</div>
+        <div class="cell alt">
+          <div class="node user arrow-right">
+            <strong>Ask operational question</strong>
+            <span>Example: "Create a draft newsletter from approved AI Lab stories and sync it to Mailchimp."</span>
+          </div>
+        </div>
+        <div class="cell"></div>
+        <div class="cell alt">
+          <div class="node mcp arrow-right arrow-down">
+            <strong>Authorize MCP request</strong>
+            <span>Route checks <code>Authorization: Bearer</code>, validates token length/config, and rate limits by client IP.</span>
+          </div>
+        </div>
+        <div class="cell">
+          <div class="node app arrow-left">
+            <strong>Resolve tool schema</strong>
+            <span>MCP server exposes typed tools such as <code>content.search</code>, <code>newsletter.create</code>, and <code>newsletter.render</code>.</span>
+          </div>
+        </div>
+        <div class="cell alt"></div>
+
+        <div class="time">T6<br>Curate</div>
+        <div class="cell"></div>
+        <div class="cell alt"></div>
+        <div class="cell"></div>
+        <div class="cell alt">
+          <div class="node app arrow-right arrow-down">
+            <strong>Call content and news services</strong>
+            <span>Searches approved content, founder submissions, news candidates, revisions, and consent records.</span>
+          </div>
+        </div>
+        <div class="cell">
+          <div class="node ext arrow-left">
+            <strong>Read Postgres</strong>
+            <span>Uses the app database user to query newsletter, content, news, contact, consent, and audit tables.</span>
+          </div>
+        </div>
+
+        <div class="time">T7<br>Assemble</div>
+        <div class="cell alt"></div>
+        <div class="cell"></div>
+        <div class="cell alt"></div>
+        <div class="cell">
+          <div class="node app arrow-right arrow-down">
+            <strong>Create and render draft</strong>
+            <span><code>newsletter.create</code>, <code>newsletter.add_item</code>, and <code>newsletter.render</code> build HTML through Pug and Juice.</span>
+          </div>
+        </div>
+        <div class="cell alt">
+          <div class="node ext arrow-left">
+            <strong>Write Postgres</strong>
+            <span>Stores draft newsletter, item ordering, tracked links, rendered HTML, and status updates.</span>
+          </div>
+        </div>
+
+        <div class="time">T8<br>Guard</div>
+        <div class="cell"></div>
+        <div class="cell alt"></div>
+        <div class="cell"></div>
+        <div class="cell alt">
+          <div class="node warning arrow-down">
+            <strong>Eligibility checkpoint</strong>
+            <span><code>newsletter.sync_mailchimp</code> and <code>newsletter.send</code> call publication eligibility checks before external publication.</span>
+          </div>
+        </div>
+        <div class="cell"></div>
+
+        <div class="time">T9<br>Publish Prep</div>
+        <div class="cell alt"></div>
+        <div class="cell"></div>
+        <div class="cell alt"></div>
+        <div class="cell">
+          <div class="node app arrow-right">
+            <strong>Sync to Mailchimp</strong>
+            <span>Creates or updates campaign, uploads rendered HTML, then saves campaign ID, web ID, and archive URL.</span>
+          </div>
+        </div>
+        <div class="cell alt">
+          <div class="node ext arrow-left">
+            <strong>Mailchimp draft campaign</strong>
+            <span>Marketing API uses access token or API key, server prefix, audience/list ID, sender name, and reply-to.</span>
+          </div>
+        </div>
+
+        <div class="time">T10<br>Human Review</div>
+        <div class="cell">
+          <div class="node user arrow-right">
+            <strong>Curator reviews</strong>
+            <span>Human checks rendered newsletter and Mailchimp draft before any final send.</span>
+          </div>
+        </div>
+        <div class="cell alt"></div>
+        <div class="cell"></div>
+        <div class="cell alt">
+          <div class="node app arrow-left">
+            <strong>Return structured result</strong>
+            <span>MCP returns JSON text plus <code>structuredContent</code> including IDs, URLs, and success/error state.</span>
+          </div>
+        </div>
+        <div class="cell"></div>
+
+        <div class="time">T11<br>Send</div>
+        <div class="cell alt">
+          <div class="node user arrow-right">
+            <strong>Explicit send request</strong>
+            <span>User asks chatbot to send, or uses admin UI after review.</span>
+          </div>
+        </div>
+        <div class="cell"></div>
+        <div class="cell alt">
+          <div class="node mcp arrow-right">
+            <strong><code>newsletter.send</code></strong>
+            <span>Tool request flows through auth, schema validation, and server-side service gates.</span>
+          </div>
+        </div>
+        <div class="cell">
+          <div class="node app arrow-right">
+            <strong>Final send gate</strong>
+            <span>Rejects already sent campaigns and any ineligible newsletter content before calling Mailchimp.</span>
+          </div>
+        </div>
+        <div class="cell alt">
+          <div class="node ext arrow-left">
+            <strong>Mailchimp sends campaign</strong>
+            <span>On success, app marks newsletter sent and archives included content items.</span>
+          </div>
+        </div>
+
+        <div class="time">T12<br>Observe</div>
+        <div class="cell">
+          <div class="node user">
+            <strong>Chatbot reports status</strong>
+            <span>User receives result, campaign metadata, or actionable error message.</span>
+          </div>
+        </div>
+        <div class="cell alt"></div>
+        <div class="cell"></div>
+        <div class="cell alt">
+          <div class="node app arrow-right">
+            <strong>Reports and digests</strong>
+            <span>Optional tools fetch Mailchimp reports, build Slack/Discord digests, and record link clicks.</span>
+          </div>
+        </div>
+        <div class="cell">
+          <div class="node ext arrow-left">
+            <strong>Mailchimp + Slack/Discord</strong>
+            <span>External systems provide campaign metrics and internal notification channels.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="notes">
+      <article class="note">
+        <h2>Primary Happy Path</h2>
+        <ul>
+          <li>Chatbot discovers metadata after a protected MCP request.</li>
+          <li>OAuth shim issues a signed, short-lived code and validates PKCE at token exchange.</li>
+          <li>MCP route accepts the bearer token and runs typed Volta tools.</li>
+          <li>Newsletter sync and send preserve the same eligibility checks used by the app.</li>
+        </ul>
+      </article>
+      <article class="note">
+        <h2>Failure Branches</h2>
+        <ul>
+          <li>Unknown redirect URI returns <code>invalid_request</code>.</li>
+          <li>Wrong client ID returns <code>unauthorized_client</code>.</li>
+          <li>Expired or tampered code returns <code>invalid_grant</code>.</li>
+          <li>Missing or wrong bearer token returns <code>401</code> from <code>/mcp/volta</code>.</li>
+          <li>Ineligible newsletter content blocks Mailchimp sync/send.</li>
+        </ul>
+      </article>
+      <article class="note">
+        <h2>Key Files</h2>
+        <ul>
+          <li><code>app/mcp/volta/route.ts</code></li>
+          <li><code>app/authorize/route.ts</code></li>
+          <li><code>app/token/route.ts</code></li>
+          <li><code>lib/oauth/claude-mcp.ts</code></li>
+          <li><code>mcp/volta/server.ts</code></li>
+          <li><code>lib/services/newsletter-service.ts</code></li>
+        </ul>
+      </article>
+    </section>
+
+    <p class="footer">
+      Internal artifact for Volta Newsletter Gen 2. Open directly in a browser; no external assets or scripts are required.
+    </p>
+  </main>
+</body>
+</html>

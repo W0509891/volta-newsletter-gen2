@@ -1,0 +1,2801 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Volta MCP Tools Reference & Documentation</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --border-accent: #388bfd;
+      --text: #c9d1d9;
+      --text-heading: #f0f6fc;
+      --text-muted: #8b949e;
+      --primary: #238636;
+      --primary-hover: #2ea043;
+      --accent-blue: #58a6ff;
+      --accent-purple: #bc8cff;
+      --accent-green: #3fb950;
+      --accent-orange: #d29922;
+      --code-bg: #0b0e14;
+      --badge-req: #da3633;
+      --badge-opt: #6e7681;
+      --shadow: 0 8px 24px rgba(1, 4, 9, 0.6);
+      --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      line-height: 1.6;
+      padding: 32px 20px 80px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+
+    .header-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-blue);
+      background: rgba(56, 139, 253, 0.15);
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(56, 139, 253, 0.3);
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--text-heading);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .lead {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 800px;
+    }
+
+    .summary-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .summary-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .summary-card .num {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-heading);
+    }
+
+    .summary-card .label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .controls-panel {
+      position: sticky;
+      top: 12px;
+      z-index: 100;
+      background: rgba(22, 27, 34, 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .search-input {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      color: var(--text-heading);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      width: 280px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent-blue);
+    }
+
+    .filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .filter-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .filter-btn:hover {
+      background: var(--border);
+      color: var(--text-heading);
+    }
+
+    .filter-btn.active {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .tool-list {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .tool-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .tool-card:hover {
+      border-color: var(--border-accent);
+    }
+
+    .tool-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .tool-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .category-tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      background: rgba(188, 140, 255, 0.15);
+      color: var(--accent-purple);
+      border: 1px solid rgba(188, 140, 255, 0.3);
+      border-radius: 4px;
+    }
+
+    .tool-name code {
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent-blue);
+    }
+
+    .copy-btn {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover {
+      background: var(--border);
+      color: var(--text-heading);
+    }
+
+    .tool-desc {
+      font-size: 0.98rem;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+
+    .tool-section {
+      margin-top: 18px;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+      padding-bottom: 4px;
+    }
+
+    .params-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin-top: 8px;
+    }
+
+    .params-table th {
+      text-align: left;
+      padding: 8px 12px;
+      background: var(--code-bg);
+      color: var(--text-muted);
+      font-weight: 600;
+      border: 1px solid var(--border);
+    }
+
+    .params-table td {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .param-name {
+      font-family: var(--font-mono);
+      color: var(--accent-orange);
+      font-weight: 600;
+    }
+
+    .type-badge {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(110, 118, 129, 0.2);
+    }
+
+    .req-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #ff7b72;
+      background: rgba(218, 54, 51, 0.15);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(218, 54, 51, 0.3);
+    }
+
+    .opt-badge {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      background: rgba(110, 118, 129, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .output-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .code-block-container {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      overflow-x: auto;
+    }
+
+    .code-block-container pre {
+      margin: 0;
+    }
+
+    .code-block-container code {
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      color: var(--accent-green);
+      line-height: 1.45;
+    }
+
+    .empty-params {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      padding: 6px 0;
+    }
+
+    footer {
+      margin-top: 60px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .controls-panel {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .search-input {
+        width: 100%;
+      }
+      .params-table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="header-badge">Model Context Protocol Reference</span>
+      <h1>Volta MCP Tools Documentation</h1>
+      <p class="lead">Complete specification of tools, input schemas, parameter requirements, and expected structured outputs for the Volta Curator MCP Server.</p>
+      
+      <div class="summary-bar">
+        <div class="summary-card">
+          <div class="num">36</div>
+          <div class="label">Total Registered Tools</div>
+        </div>
+        <div class="summary-card">
+          <div class="num">10</div>
+          <div class="label">Functional Categories</div>
+        </div>
+        <div class="summary-card">
+          <div class="num">v0.1.0</div>
+          <div class="label">MCP Protocol Version</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="controls-panel">
+      <input type="text" id="toolSearch" class="search-input" placeholder="Search tools or keywords..." oninput="handleSearch(this.value)">
+      <div class="filter-group">
+        <button class="filter-btn active" data-category="ALL" onclick="filterCategory('ALL', this)">All (36)</button>
+        
+    <button class="filter-btn active" data-category="Content Management" onclick="filterCategory('Content Management', this)">Content Management</button>
+  
+    <button class="filter-btn " data-category="Revisions & Consents" onclick="filterCategory('Revisions & Consents', this)">Revisions & Consents</button>
+  
+    <button class="filter-btn " data-category="Do Not Feature" onclick="filterCategory('Do Not Feature', this)">Do Not Feature</button>
+  
+    <button class="filter-btn " data-category="Founder Submissions" onclick="filterCategory('Founder Submissions', this)">Founder Submissions</button>
+  
+    <button class="filter-btn " data-category="News Curation" onclick="filterCategory('News Curation', this)">News Curation</button>
+  
+    <button class="filter-btn " data-category="News Sources" onclick="filterCategory('News Sources', this)">News Sources</button>
+  
+    <button class="filter-btn " data-category="Delivery & Notifications" onclick="filterCategory('Delivery & Notifications', this)">Delivery & Notifications</button>
+  
+    <button class="filter-btn " data-category="Newsletter Management" onclick="filterCategory('Newsletter Management', this)">Newsletter Management</button>
+  
+    <button class="filter-btn " data-category="Newsletter Publishing" onclick="filterCategory('Newsletter Publishing', this)">Newsletter Publishing</button>
+  
+    <button class="filter-btn " data-category="Plugin Utilities" onclick="filterCategory('Plugin Utilities', this)">Plugin Utilities</button>
+  
+      </div>
+    </div>
+
+    <main class="tool-list" id="toolList">
+      
+      <article class="tool-card" id="tool-content-search" data-category="Content Management" data-name="content.search">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Content Management</span>
+            <h3 class="tool-name"><code>content.search</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('content.search')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Search newsletter content items by status, category type, or search term.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">status</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><code>INBOX | DRAFT | PENDING_CONSENT | APPROVED | REJECTED | BACKLOG | ARCHIVED</code></td>
+          <td>Filter content items by their workflow status.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">type</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><code>STORY | EVENT | WIN | OPPORTUNITY | COMMUNITY</code></td>
+          <td>Filter content items by section/topic category.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">search</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>Max 200 chars</em></td>
+          <td>Keyword search query matched across title and body.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">An object containing an array of matched content items.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;items&quot;: [
+    {
+      &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+      &quot;type&quot;: &quot;STORY&quot;,
+      &quot;title&quot;: &quot;Breakthrough in AI Research at Volta&quot;,
+      &quot;summary&quot;: &quot;Volta research team publishes new findings on LLM workflows.&quot;,
+      &quot;body&quot;: &quot;Full editorial content text goes here...&quot;,
+      &quot;url&quot;: &quot;https://volta.example.com/blog/ai-research&quot;,
+      &quot;status&quot;: &quot;APPROVED&quot;,
+      &quot;featured&quot;: true,
+      &quot;itemOrder&quot;: 1,
+      &quot;contactName&quot;: &quot;Jane Doe&quot;,
+      &quot;contactEmail&quot;: &quot;jane@example.com&quot;,
+      &quot;consentStatus&quot;: &quot;GRANTED&quot;,
+      &quot;createdAt&quot;: &quot;2026-09-24T10:00:00.000Z&quot;,
+      &quot;updatedAt&quot;: &quot;2026-09-24T12:00:00.000Z&quot;
+    }
+  ]
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-content-get" data-category="Content Management" data-name="content.get">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Content Management</span>
+            <h3 class="tool-name"><code>content.get</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('content.get')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Get one content item by its unique UUID.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the content item to retrieve.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">An object containing the full content item record or null if not found.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;item&quot;: {
+    &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+    &quot;currentRevisionId&quot;: &quot;6ba7b810-9dad-11d1-80b4-00c04fd430c8&quot;,
+    &quot;approvedRevisionId&quot;: &quot;6ba7b810-9dad-11d1-80b4-00c04fd430c8&quot;,
+    &quot;type&quot;: &quot;STORY&quot;,
+    &quot;title&quot;: &quot;Breakthrough in AI Research at Volta&quot;,
+    &quot;body&quot;: &quot;Full editorial story content...&quot;,
+    &quot;summary&quot;: &quot;Brief executive summary of the story.&quot;,
+    &quot;url&quot;: &quot;https://volta.example.com/story/1&quot;,
+    &quot;status&quot;: &quot;APPROVED&quot;,
+    &quot;featured&quot;: true,
+    &quot;itemOrder&quot;: 1,
+    &quot;contactId&quot;: &quot;7ca7b810-9dad-11d1-80b4-00c04fd430c9&quot;,
+    &quot;contactName&quot;: &quot;Jane Doe&quot;,
+    &quot;contactEmail&quot;: &quot;jane@example.com&quot;,
+    &quot;consentStatus&quot;: &quot;GRANTED&quot;,
+    &quot;createdAt&quot;: &quot;2026-09-24T10:00:00.000Z&quot;,
+    &quot;updatedAt&quot;: &quot;2026-09-24T12:00:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-content-create" data-category="Content Management" data-name="content.create">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Content Management</span>
+            <h3 class="tool-name"><code>content.create</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('content.create')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Create a new draft content item with automatic contact deduplication and initial revision snapshot.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">title</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td><em>1-180 chars</em></td>
+          <td>Headline or title of the content item.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">type</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td><code>STORY | EVENT | WIN | OPPORTUNITY | COMMUNITY</code></td>
+          <td>Category / section type.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">summary</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>Max 600 chars</em></td>
+          <td>Short synopsis for newsletter teasers.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">body</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>Max 6000 chars</em></td>
+          <td>Full body content (Markdown or plain text).</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">url</code></td>
+          <td><span class="type-badge string">string (url)</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Canonical link for the item.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">contactEmail</code></td>
+          <td><span class="type-badge string">string (email)</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Email of the author or primary contact.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">contactName</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>Max 180 chars</em></td>
+          <td>Full name of the contact person.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">contactOrganization</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>Max 180 chars</em></td>
+          <td>Company or entity associated with the contact.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">An object containing the newly created DRAFT content item record.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;item&quot;: {
+    &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+    &quot;currentRevisionId&quot;: &quot;6ba7b810-9dad-11d1-80b4-00c04fd430c8&quot;,
+    &quot;type&quot;: &quot;STORY&quot;,
+    &quot;title&quot;: &quot;Exciting Launch Announcement&quot;,
+    &quot;summary&quot;: &quot;Preview summary text&quot;,
+    &quot;body&quot;: &quot;Full story text&quot;,
+    &quot;url&quot;: &quot;https://example.com/launch&quot;,
+    &quot;status&quot;: &quot;DRAFT&quot;,
+    &quot;contactId&quot;: &quot;7ca7b810-9dad-11d1-80b4-00c04fd430c9&quot;,
+    &quot;createdAt&quot;: &quot;2026-09-24T14:00:00.000Z&quot;,
+    &quot;updatedAt&quot;: &quot;2026-09-24T14:00:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-content-change_status" data-category="Content Management" data-name="content.change_status">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Content Management</span>
+            <h3 class="tool-name"><code>content.change_status</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('content.change_status')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Change content status or move content to backlog/rejected states with optional rationale.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the content item.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">status</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td><code>INBOX | DRAFT | PENDING_CONSENT | APPROVED | REJECTED | BACKLOG | ARCHIVED</code></td>
+          <td>Target workflow status.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">rejectionReason</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>Max 500 chars</em></td>
+          <td>Required or recommended explanation when status is REJECTED.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">revisitAt</code></td>
+          <td><span class="type-badge string">string (iso datetime)</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Follow-up date when parked in BACKLOG.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">An object containing the updated content item.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;item&quot;: {
+    &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+    &quot;status&quot;: &quot;APPROVED&quot;,
+    &quot;rejectionReason&quot;: null,
+    &quot;revisitAt&quot;: null,
+    &quot;updatedAt&quot;: &quot;2026-09-24T14:15:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-revision-current" data-category="Revisions & Consents" data-name="revision.current">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Revisions & Consents</span>
+            <h3 class="tool-name"><code>revision.current</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('revision.current')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Get the current immutable content revision (snapshot and content hash) for a content item.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">contentItemId</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the content item.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">The current immutable revision details including SHA-256 hash.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;revision&quot;: {
+    &quot;id&quot;: &quot;6ba7b810-9dad-11d1-80b4-00c04fd430c8&quot;,
+    &quot;contentItemId&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+    &quot;revisionNumber&quot;: 1,
+    &quot;title&quot;: &quot;Breakthrough in AI Research at Volta&quot;,
+    &quot;summary&quot;: &quot;Summary text&quot;,
+    &quot;body&quot;: &quot;Body text&quot;,
+    &quot;url&quot;: &quot;https://volta.example.com&quot;,
+    &quot;contentHash&quot;: &quot;e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855&quot;,
+    &quot;createdBy&quot;: &quot;system&quot;,
+    &quot;createdAt&quot;: &quot;2026-09-24T10:00:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-consent-create_request" data-category="Revisions & Consents" data-name="consent.create_request">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Revisions & Consents</span>
+            <h3 class="tool-name"><code>consent.create_request</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('consent.create_request')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Create a secure, tokenized preview link for author/founder approval tied to an immutable revision.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">contentItemId</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the content item to be approved.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">contactId</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Optional ID of the contact recipient.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">recipientName</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>Max 180 chars</em></td>
+          <td>Display name of the approver.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">recipientEmail</code></td>
+          <td><span class="type-badge string">string (email)</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Email destination for the request.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">baseUrl</code></td>
+          <td><span class="type-badge string">string (url)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>Base web URL used to generate the consent landing link.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Consent request database record and full approval URL with embedded secure token.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;request&quot;: {
+    &quot;id&quot;: &quot;8ca7b810-9dad-11d1-80b4-00c04fd430ca&quot;,
+    &quot;contentItemId&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+    &quot;revisionId&quot;: &quot;6ba7b810-9dad-11d1-80b4-00c04fd430c8&quot;,
+    &quot;contactId&quot;: &quot;7ca7b810-9dad-11d1-80b4-00c04fd430c9&quot;,
+    &quot;recipientName&quot;: &quot;Jane Doe&quot;,
+    &quot;recipientEmail&quot;: &quot;jane@example.com&quot;,
+    &quot;status&quot;: &quot;PENDING&quot;,
+    &quot;expiresAt&quot;: &quot;2026-10-08T14:00:00.000Z&quot;,
+    &quot;createdAt&quot;: &quot;2026-09-24T14:00:00.000Z&quot;
+  },
+  &quot;approvalUrl&quot;: &quot;https://newsletter.volta.com/consent/dGVzdC1zZWN1cmUtdG9rZW4&quot;
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-do_not_feature-insert" data-category="Do Not Feature" data-name="do_not_feature.insert">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Do Not Feature</span>
+            <h3 class="tool-name"><code>do_not_feature.insert</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('do_not_feature.insert')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Insert an entity into the do-not-feature suppression list.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">name</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td><em>1-255 chars</em></td>
+          <td>Name of the person, company, or entity to suppress from featuring.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">requestedAt</code></td>
+          <td><span class="type-badge string">string (date / iso-date)</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Date the request was made (defaults to current date).</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">note</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Context or rationale for the do-not-feature request.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">enabled</code></td>
+          <td><span class="type-badge boolean">boolean</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Whether the do-not-feature suppression is currently active.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">The created do-not-feature record.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;entry&quot;: {
+    &quot;id&quot;: &quot;1ca7b810-9dad-11d1-80b4-00c04fd430cc&quot;,
+    &quot;name&quot;: &quot;Acme Corp&quot;,
+    &quot;requestedAt&quot;: &quot;2026-09-25&quot;,
+    &quot;note&quot;: &quot;Requested exclusion from newsletter highlights.&quot;,
+    &quot;enabled&quot;: true,
+    &quot;createdAt&quot;: &quot;2026-09-25T10:00:00.000Z&quot;,
+    &quot;updatedAt&quot;: &quot;2026-09-25T10:00:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-do_not_feature-update" data-category="Do Not Feature" data-name="do_not_feature.update">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Do Not Feature</span>
+            <h3 class="tool-name"><code>do_not_feature.update</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('do_not_feature.update')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Update an existing entry in the do-not-feature suppression list.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the do-not-feature entry to update.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">name</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>1-255 chars</em></td>
+          <td>Updated name of the suppressed entity.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">requestedAt</code></td>
+          <td><span class="type-badge string">string (date / iso-date)</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Updated request date.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">note</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Updated note or rationale.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">enabled</code></td>
+          <td><span class="type-badge boolean">boolean</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Updated active/suppressed status.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">The updated do-not-feature record.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;entry&quot;: {
+    &quot;id&quot;: &quot;1ca7b810-9dad-11d1-80b4-00c04fd430cc&quot;,
+    &quot;name&quot;: &quot;Acme Corp&quot;,
+    &quot;requestedAt&quot;: &quot;2026-09-25&quot;,
+    &quot;note&quot;: &quot;Updated exclusion request.&quot;,
+    &quot;enabled&quot;: false,
+    &quot;createdAt&quot;: &quot;2026-09-25T10:00:00.000Z&quot;,
+    &quot;updatedAt&quot;: &quot;2026-09-25T12:00:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-do_not_feature-list" data-category="Do Not Feature" data-name="do_not_feature.list">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Do Not Feature</span>
+            <h3 class="tool-name"><code>do_not_feature.list</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('do_not_feature.list')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">List entries in the do-not-feature suppression list.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">enabled</code></td>
+          <td><span class="type-badge boolean">boolean</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Filter entries by active/enabled status.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">search</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Search string matching name or note.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">An array of do-not-feature entries.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;entries&quot;: [
+    {
+      &quot;id&quot;: &quot;1ca7b810-9dad-11d1-80b4-00c04fd430cc&quot;,
+      &quot;name&quot;: &quot;Acme Corp&quot;,
+      &quot;requestedAt&quot;: &quot;2026-09-25&quot;,
+      &quot;note&quot;: &quot;Requested exclusion from newsletter highlights.&quot;,
+      &quot;enabled&quot;: true,
+      &quot;createdAt&quot;: &quot;2026-09-25T10:00:00.000Z&quot;,
+      &quot;updatedAt&quot;: &quot;2026-09-25T10:00:00.000Z&quot;
+    }
+  ]
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-do_not_feature-get" data-category="Do Not Feature" data-name="do_not_feature.get">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Do Not Feature</span>
+            <h3 class="tool-name"><code>do_not_feature.get</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('do_not_feature.get')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Get a do-not-feature entry by ID.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the do-not-feature record.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">The do-not-feature record or null.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;entry&quot;: {
+    &quot;id&quot;: &quot;1ca7b810-9dad-11d1-80b4-00c04fd430cc&quot;,
+    &quot;name&quot;: &quot;Acme Corp&quot;,
+    &quot;requestedAt&quot;: &quot;2026-09-25&quot;,
+    &quot;note&quot;: &quot;Requested exclusion from newsletter highlights.&quot;,
+    &quot;enabled&quot;: true,
+    &quot;createdAt&quot;: &quot;2026-09-25T10:00:00.000Z&quot;,
+    &quot;updatedAt&quot;: &quot;2026-09-25T10:00:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-submission-list" data-category="Founder Submissions" data-name="submission.list">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Founder Submissions</span>
+            <h3 class="tool-name"><code>submission.list</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('submission.list')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">List intake submissions from founders for curation triage.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">status</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><code>RECEIVED | TRIAGED | PROMOTED | REJECTED</code></td>
+          <td>Filter submissions by lifecycle stage.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">An array of founder submissions matching the status filter.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;submissions&quot;: [
+    {
+      &quot;id&quot;: &quot;9ca7b810-9dad-11d1-80b4-00c04fd430cb&quot;,
+      &quot;type&quot;: &quot;STORIES&quot;,
+      &quot;founderName&quot;: &quot;Alex Rivera&quot;,
+      &quot;founderEmail&quot;: &quot;alex@startup.io&quot;,
+      &quot;companyName&quot;: &quot;StartupX&quot;,
+      &quot;title&quot;: &quot;StartupX raises Seed round&quot;,
+      &quot;summary&quot;: &quot;StartupX secured $2M in Seed funding to expand platform.&quot;,
+      &quot;status&quot;: &quot;RECEIVED&quot;,
+      &quot;sourceUrls&quot;: [
+        &quot;https://startup.io/news&quot;
+      ],
+      &quot;submittedAt&quot;: &quot;2026-09-24T11:30:00.000Z&quot;
+    }
+  ]
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-submission-get" data-category="Founder Submissions" data-name="submission.get">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Founder Submissions</span>
+            <h3 class="tool-name"><code>submission.get</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('submission.get')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Get a specific founder submission by its UUID.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the founder submission.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">The detailed submission record or null if not found.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;submission&quot;: {
+    &quot;id&quot;: &quot;9ca7b810-9dad-11d1-80b4-00c04fd430cb&quot;,
+    &quot;type&quot;: &quot;STORIES&quot;,
+    &quot;founderName&quot;: &quot;Alex Rivera&quot;,
+    &quot;founderEmail&quot;: &quot;alex@startup.io&quot;,
+    &quot;companyName&quot;: &quot;StartupX&quot;,
+    &quot;title&quot;: &quot;StartupX raises Seed round&quot;,
+    &quot;summary&quot;: &quot;Full pitch notes and details...&quot;,
+    &quot;body&quot;: &quot;Detailed narrative...&quot;,
+    &quot;status&quot;: &quot;RECEIVED&quot;,
+    &quot;sourceUrls&quot;: [
+      &quot;https://startup.io/news&quot;
+    ],
+    &quot;createdAt&quot;: &quot;2026-09-24T11:30:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-submission-promote" data-category="Founder Submissions" data-name="submission.promote">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Founder Submissions</span>
+            <h3 class="tool-name"><code>submission.promote</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('submission.promote')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Promote a founder submission into an editorial DRAFT content item and record an audit log entry.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the submission to promote.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Success indicator and newly generated DRAFT content item.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;item&quot;: {
+    &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+    &quot;title&quot;: &quot;StartupX raises Seed round&quot;,
+    &quot;type&quot;: &quot;STORY&quot;,
+    &quot;status&quot;: &quot;DRAFT&quot;,
+    &quot;contactId&quot;: &quot;7ca7b810-9dad-11d1-80b4-00c04fd430c9&quot;,
+    &quot;createdAt&quot;: &quot;2026-09-24T14:45:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-submission-reject" data-category="Founder Submissions" data-name="submission.reject">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Founder Submissions</span>
+            <h3 class="tool-name"><code>submission.reject</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('submission.reject')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Reject a founder submission and record audit log trace.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the submission to reject.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Success indicator and updated submission record.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;submission&quot;: {
+    &quot;id&quot;: &quot;9ca7b810-9dad-11d1-80b4-00c04fd430cb&quot;,
+    &quot;status&quot;: &quot;REJECTED&quot;,
+    &quot;updatedAt&quot;: &quot;2026-09-24T14:50:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-news-search" data-category="News Curation" data-name="news.search">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">News Curation</span>
+            <h3 class="tool-name"><code>news.search</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('news.search')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Search aggregated reviewable news candidates across registered news sources.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">status</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><code>NEW | SURFACED | SAVED | DISMISSED | PROMOTED</code></td>
+          <td>Filter candidates by triage status.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">search</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>Max 200 chars</em></td>
+          <td>Text search across news title and excerpts.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">An array of news candidate items.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;candidates&quot;: [
+    {
+      &quot;id&quot;: &quot;aca7b810-9dad-11d1-80b4-00c04fd430cc&quot;,
+      &quot;sourceId&quot;: &quot;bca7b810-9dad-11d1-80b4-00c04fd430cd&quot;,
+      &quot;title&quot;: &quot;Atlantic Tech Ecosystem Sees Record Growth&quot;,
+      &quot;canonicalUrl&quot;: &quot;https://news.example.com/atlantic-tech&quot;,
+      &quot;aiSummary&quot;: &quot;Summary generated during RSS ingest.&quot;,
+      &quot;status&quot;: &quot;SURFACED&quot;,
+      &quot;publishedAt&quot;: &quot;2026-09-24T08:00:00.000Z&quot;
+    }
+  ]
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-news-get" data-category="News Curation" data-name="news.get">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">News Curation</span>
+            <h3 class="tool-name"><code>news.get</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('news.get')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Get full details of a specific news candidate item.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the news candidate.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Full candidate record including raw scraped text and AI classification.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;candidate&quot;: {
+    &quot;id&quot;: &quot;aca7b810-9dad-11d1-80b4-00c04fd430cc&quot;,
+    &quot;sourceId&quot;: &quot;bca7b810-9dad-11d1-80b4-00c04fd430cd&quot;,
+    &quot;title&quot;: &quot;Atlantic Tech Ecosystem Sees Record Growth&quot;,
+    &quot;canonicalUrl&quot;: &quot;https://news.example.com/atlantic-tech&quot;,
+    &quot;rawContent&quot;: &quot;Full article text fetched from source adapter...&quot;,
+    &quot;aiSummary&quot;: &quot;Structured AI digest...&quot;,
+    &quot;status&quot;: &quot;NEW&quot;,
+    &quot;publishedAt&quot;: &quot;2026-09-24T08:00:00.000Z&quot;,
+    &quot;createdAt&quot;: &quot;2026-09-24T08:05:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-news-promote" data-category="News Curation" data-name="news.promote">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">News Curation</span>
+            <h3 class="tool-name"><code>news.promote</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('news.promote')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Promote a discovered news candidate into draft editorial content.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the news candidate to promote.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Success flag and resulting draft ContentItem entity.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;item&quot;: {
+    &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,
+    &quot;title&quot;: &quot;Atlantic Tech Ecosystem Sees Record Growth&quot;,
+    &quot;type&quot;: &quot;STORY&quot;,
+    &quot;summary&quot;: &quot;Structured AI digest...&quot;,
+    &quot;body&quot;: &quot;Full article text...&quot;,
+    &quot;url&quot;: &quot;https://news.example.com/atlantic-tech&quot;,
+    &quot;status&quot;: &quot;DRAFT&quot;,
+    &quot;createdAt&quot;: &quot;2026-09-24T15:00:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-news-save" data-category="News Curation" data-name="news.save">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">News Curation</span>
+            <h3 class="tool-name"><code>news.save</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('news.save')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Save a news candidate for later review (marks status as SAVED).</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the news candidate.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Updated news candidate record.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;candidate&quot;: {
+    &quot;id&quot;: &quot;aca7b810-9dad-11d1-80b4-00c04fd430cc&quot;,
+    &quot;status&quot;: &quot;SAVED&quot;,
+    &quot;updatedAt&quot;: &quot;2026-09-24T15:02:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-news-dismiss" data-category="News Curation" data-name="news.dismiss">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">News Curation</span>
+            <h3 class="tool-name"><code>news.dismiss</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('news.dismiss')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Dismiss a news candidate from active queues (marks status as DISMISSED).</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the news candidate.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Updated news candidate record.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;candidate&quot;: {
+    &quot;id&quot;: &quot;aca7b810-9dad-11d1-80b4-00c04fd430cc&quot;,
+    &quot;status&quot;: &quot;DISMISSED&quot;,
+    &quot;updatedAt&quot;: &quot;2026-09-24T15:03:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-source-list" data-category="News Sources" data-name="source.list">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">News Sources</span>
+            <h3 class="tool-name"><code>source.list</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('source.list')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">List configured news ingestion sources.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">enabled</code></td>
+          <td><span class="type-badge boolean">boolean</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Filter sources by enabled status.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">An array of news source definitions.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;sources&quot;: [
+    {
+      &quot;id&quot;: &quot;bca7b810-9dad-11d1-80b4-00c04fd430cd&quot;,
+      &quot;name&quot;: &quot;Entrevestor Atlantic News&quot;,
+      &quot;type&quot;: &quot;RSS&quot;,
+      &quot;url&quot;: &quot;https://entrevestor.com/feed&quot;,
+      &quot;enabled&quot;: true,
+      &quot;pollingIntervalMinutes&quot;: 60,
+      &quot;priority&quot;: 10,
+      &quot;lastCheckedAt&quot;: &quot;2026-09-24T14:00:00.000Z&quot;
+    }
+  ]
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-source-add" data-category="News Sources" data-name="source.add">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">News Sources</span>
+            <h3 class="tool-name"><code>source.add</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('source.add')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Add a new dynamic news feed or source for aggregation.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">name</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td><em>1-180 chars</em></td>
+          <td>Readable name for the source feed.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">type</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td><code>RSS | WEBSITE | LINKEDIN_PAGE | LINKEDIN_PROFILE | MANUAL | API</code></td>
+          <td>Type of connector/adapter required.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">url</code></td>
+          <td><span class="type-badge string">string (url)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>Valid URL endpoint or feed URL.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">enabled</code></td>
+          <td><span class="type-badge boolean">boolean</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Whether polling should be active (defaults to true).</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">pollingIntervalMinutes</code></td>
+          <td><span class="type-badge integer">integer</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>5-10080 minutes</em></td>
+          <td>How frequently the background worker crawls this source.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">priority</code></td>
+          <td><span class="type-badge integer">integer</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>-100 to 100</em></td>
+          <td>Priority score for sorting crawled items.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">The created NewsSource database entity.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;source&quot;: {
+    &quot;id&quot;: &quot;bca7b810-9dad-11d1-80b4-00c04fd430cd&quot;,
+    &quot;name&quot;: &quot;TechCrunch Regional&quot;,
+    &quot;type&quot;: &quot;RSS&quot;,
+    &quot;url&quot;: &quot;https://techcrunch.com/feed&quot;,
+    &quot;enabled&quot;: true,
+    &quot;pollingIntervalMinutes&quot;: 60,
+    &quot;priority&quot;: 0,
+    &quot;createdAt&quot;: &quot;2026-09-24T15:05:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-source-remove" data-category="News Sources" data-name="source.remove">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">News Sources</span>
+            <h3 class="tool-name"><code>source.remove</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('source.remove')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Remove a configured news source by ID.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td><em>1-180 chars</em></td>
+          <td>ID of the news source to delete.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Result of the removal operation.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;source&quot;: {
+    &quot;id&quot;: &quot;bca7b810-9dad-11d1-80b4-00c04fd430cd&quot;,
+    &quot;deleted&quot;: true
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-source-set_enabled" data-category="News Sources" data-name="source.set_enabled">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">News Sources</span>
+            <h3 class="tool-name"><code>source.set_enabled</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('source.set_enabled')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Enable or disable a configured news source.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td><em>1-180 chars</em></td>
+          <td>ID of the news source to update.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">enabled</code></td>
+          <td><span class="type-badge boolean">boolean</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>Whether the news source is enabled for crawling.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">The updated news source object.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;source&quot;: {
+    &quot;id&quot;: &quot;bca7b810-9dad-11d1-80b4-00c04fd430cd&quot;,
+    &quot;name&quot;: &quot;Entrevestor&quot;,
+    &quot;type&quot;: &quot;RSS&quot;,
+    &quot;url&quot;: &quot;https://entrevestor.com/feed&quot;,
+    &quot;enabled&quot;: true,
+    &quot;pollingIntervalMinutes&quot;: 1440,
+    &quot;priority&quot;: 0,
+    &quot;updatedAt&quot;: &quot;2026-09-25T00:00:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-source-check_now" data-category="News Sources" data-name="source.check_now">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">News Sources</span>
+            <h3 class="tool-name"><code>source.check_now</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('source.check_now')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Trigger immediate on-demand aggregation cycle across all enabled news sources.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          <p class="empty-params"><em>No input parameters required.</em></p>
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Aggregation execution summary with per-source counts and errors.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;sourcesChecked&quot;: 2,
+  &quot;results&quot;: [
+    {
+      &quot;sourceId&quot;: &quot;bca7b810-9dad-11d1-80b4-00c04fd430cd&quot;,
+      &quot;sourceName&quot;: &quot;Entrevestor&quot;,
+      &quot;fetched&quot;: 8,
+      &quot;created&quot;: 3
+    },
+    {
+      &quot;sourceId&quot;: &quot;cca7b810-9dad-11d1-80b4-00c04fd430ce&quot;,
+      &quot;sourceName&quot;: &quot;Regional Feed&quot;,
+      &quot;fetched&quot;: 0,
+      &quot;created&quot;: 0,
+      &quot;error&quot;: &quot;HTTP 404 Not Found&quot;
+    }
+  ]
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-delivery-build_digest" data-category="Delivery & Notifications" data-name="delivery.build_digest">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Delivery & Notifications</span>
+            <h3 class="tool-name"><code>delivery.build_digest</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('delivery.build_digest')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Build a digest payload preview of undelivered news candidates without transmitting.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">channel</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td><code>SLACK | DISCORD</code></td>
+          <td>Target notification platform.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">limit</code></td>
+          <td><span class="type-badge integer">integer</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>1-25 items</em></td>
+          <td>Maximum candidate items to include.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Structured digest preview including targeted candidates.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;channel&quot;: &quot;SLACK&quot;,
+  &quot;deliveryType&quot;: &quot;DIGEST&quot;,
+  &quot;candidates&quot;: [
+    {
+      &quot;id&quot;: &quot;aca7b810-9dad-11d1-80b4-00c04fd430cc&quot;,
+      &quot;title&quot;: &quot;Atlantic Tech Growth&quot;,
+      &quot;canonicalUrl&quot;: &quot;https://news.example.com&quot;,
+      &quot;aiSummary&quot;: &quot;Summary of top stories&quot;
+    }
+  ]
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-delivery-send_slack" data-category="Delivery & Notifications" data-name="delivery.send_slack">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Delivery & Notifications</span>
+            <h3 class="tool-name"><code>delivery.send_slack</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('delivery.send_slack')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Send Slack webhook digest for undelivered news candidates and record delivery history.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">limit</code></td>
+          <td><span class="type-badge integer">integer</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>1-25 items</em></td>
+          <td>Maximum items to deliver.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Delivery confirmation with delivered count and reference ID.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;delivered&quot;: 3,
+  &quot;reference&quot;: &quot;slack-msg-1727190000&quot;
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-delivery-send_discord" data-category="Delivery & Notifications" data-name="delivery.send_discord">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Delivery & Notifications</span>
+            <h3 class="tool-name"><code>delivery.send_discord</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('delivery.send_discord')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Send Discord webhook digest for undelivered news candidates and record delivery history.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">limit</code></td>
+          <td><span class="type-badge integer">integer</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>1-25 items</em></td>
+          <td>Maximum items to deliver.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Delivery confirmation with delivered count and reference ID.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;delivered&quot;: 3,
+  &quot;reference&quot;: &quot;discord-msg-1727190000&quot;
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-newsletter-list" data-category="Newsletter Management" data-name="newsletter.list">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Newsletter Management</span>
+            <h3 class="tool-name"><code>newsletter.list</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('newsletter.list')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">List all dispatch newsletters with status, schedules, and metadata.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          <p class="empty-params"><em>No input parameters required.</em></p>
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">An array of newsletter records.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;newsletters&quot;: [
+    {
+      &quot;id&quot;: &quot;dda7b810-9dad-11d1-80b4-00c04fd430cf&quot;,
+      &quot;slug&quot;: &quot;volta-dispatch-2026-09&quot;,
+      &quot;subject&quot;: &quot;Volta Dispatch - Autumn 2026&quot;,
+      &quot;previewText&quot;: &quot;Key startup updates and founder wins.&quot;,
+      &quot;status&quot;: &quot;DRAFT&quot;,
+      &quot;scheduledFor&quot;: &quot;2026-09-30T13:00:00.000Z&quot;,
+      &quot;createdAt&quot;: &quot;2026-09-24T12:00:00.000Z&quot;
+    }
+  ]
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-newsletter-get" data-category="Newsletter Management" data-name="newsletter.get">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Newsletter Management</span>
+            <h3 class="tool-name"><code>newsletter.get</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('newsletter.get')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Get one newsletter edition by ID including status and Mailchimp campaign linkages.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">id</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the newsletter.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Newsletter details record or null if not found.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;newsletter&quot;: {
+    &quot;id&quot;: &quot;dda7b810-9dad-11d1-80b4-00c04fd430cf&quot;,
+    &quot;slug&quot;: &quot;volta-dispatch-2026-09&quot;,
+    &quot;subject&quot;: &quot;Volta Dispatch - Autumn 2026&quot;,
+    &quot;previewText&quot;: &quot;Key startup updates and founder wins.&quot;,
+    &quot;status&quot;: &quot;DRAFT&quot;,
+    &quot;mailchimpCampaignId&quot;: &quot;mc_camp_123&quot;,
+    &quot;mailchimpWebId&quot;: 456789,
+    &quot;mailchimpArchiveUrl&quot;: &quot;https://mailchi.mp/volta/autumn-2026&quot;,
+    &quot;scheduledFor&quot;: &quot;2026-09-30T13:00:00.000Z&quot;,
+    &quot;createdAt&quot;: &quot;2026-09-24T12:00:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-newsletter-create" data-category="Newsletter Management" data-name="newsletter.create">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Newsletter Management</span>
+            <h3 class="tool-name"><code>newsletter.create</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('newsletter.create')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Create a new draft newsletter campaign.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">slug</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td><em>1-120 chars</em></td>
+          <td>URL-friendly unique identifier for the newsletter edition.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">subject</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td><em>1-180 chars</em></td>
+          <td>Email subject line.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">previewText</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>Max 280 chars</em></td>
+          <td>Preheader / preview text visible in email clients.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">scheduledFor</code></td>
+          <td><span class="type-badge string">string (iso datetime)</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Planned publication/send timestamp.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">The created newsletter record in DRAFT status.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;newsletter&quot;: {
+    &quot;id&quot;: &quot;dda7b810-9dad-11d1-80b4-00c04fd430cf&quot;,
+    &quot;slug&quot;: &quot;volta-dispatch-2026-09&quot;,
+    &quot;subject&quot;: &quot;Volta Dispatch - Autumn 2026&quot;,
+    &quot;previewText&quot;: &quot;Key updates&quot;,
+    &quot;status&quot;: &quot;DRAFT&quot;,
+    &quot;scheduledFor&quot;: &quot;2026-09-30T13:00:00.000Z&quot;,
+    &quot;createdAt&quot;: &quot;2026-09-24T15:10:00.000Z&quot;
+  }
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-newsletter-add_item" data-category="Newsletter Management" data-name="newsletter.add_item">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Newsletter Management</span>
+            <h3 class="tool-name"><code>newsletter.add_item</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('newsletter.add_item')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Attach an approved content item to a newsletter section at a given position.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">newsletterId</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the target newsletter.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">contentItemId</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the content item to attach.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">section</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td><code>FEATURED | STORIES | EVENTS | WINS | OPPORTUNITIES | COMMUNITY</code></td>
+          <td>Section of the newsletter where the item should appear.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">position</code></td>
+          <td><span class="type-badge integer">integer</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><em>>= 0</em></td>
+          <td>Zero-indexed position within the section (defaults to 0).</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Success status confirmation.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;success&quot;: true
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-newsletter-remove_item" data-category="Newsletter Management" data-name="newsletter.remove_item">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Newsletter Management</span>
+            <h3 class="tool-name"><code>newsletter.remove_item</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('newsletter.remove_item')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Detach a content item from a newsletter edition.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">newsletterId</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the newsletter.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">contentItemId</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the content item to remove.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Success status confirmation.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;success&quot;: true
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-newsletter-render" data-category="Newsletter Publishing" data-name="newsletter.render">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Newsletter Publishing</span>
+            <h3 class="tool-name"><code>newsletter.render</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('newsletter.render')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Render the complete HTML email template through the Pug and Juice inlining pipeline with tracked click links.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">newsletterId</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the newsletter to render.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Success flag, newsletter model, and inlined HTML string.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;newsletter&quot;: {
+    &quot;id&quot;: &quot;dda7b810-9dad-11d1-80b4-00c04fd430cf&quot;,
+    &quot;slug&quot;: &quot;volta-dispatch-2026-09&quot;
+  },
+  &quot;htmlContent&quot;: &quot;&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;...&lt;/head&gt;&lt;body&gt;...&lt;/body&gt;&lt;/html&gt;&quot;
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-newsletter-sync_mailchimp" data-category="Newsletter Publishing" data-name="newsletter.sync_mailchimp">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Newsletter Publishing</span>
+            <h3 class="tool-name"><code>newsletter.sync_mailchimp</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('newsletter.sync_mailchimp')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Perform server-side publication eligibility verification (consents and approvals) and sync rendered content into Mailchimp.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">newsletterId</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the newsletter to sync.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Success status, Mailchimp campaign ID, and web archive URL (or error reason on eligibility failure).</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;campaignId&quot;: &quot;mc_camp_123456789&quot;,
+  &quot;archiveUrl&quot;: &quot;https://mailchi.mp/volta/autumn-2026&quot;
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-newsletter-send" data-category="Newsletter Publishing" data-name="newsletter.send">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Newsletter Publishing</span>
+            <h3 class="tool-name"><code>newsletter.send</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('newsletter.send')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Trigger campaign send on Mailchimp after validating server-side publication eligibility gates, and archive attached content items.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">newsletterId</code></td>
+          <td><span class="type-badge string">string (uuid)</span></td>
+          <td><span class="req-badge">Required</span></td>
+          <td>-</td>
+          <td>UUID of the newsletter to send.</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">Success confirmation upon completed broadcast.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;success&quot;: true
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+      <article class="tool-card" id="tool-plugin-help" data-category="Plugin Utilities" data-name="plugin.help">
+        <div class="tool-header">
+          <div class="tool-title-group">
+            <span class="category-tag">Plugin Utilities</span>
+            <h3 class="tool-name"><code>plugin.help</code></h3>
+          </div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('plugin.help')" title="Copy tool name">Copy Name</button>
+        </div>
+        <p class="tool-desc">Show comprehensive documentation, schemas, parameter rules, and expected output examples for all Volta MCP tools.</p>
+        
+        <div class="tool-section">
+          <h4 class="section-title">Input Parameters</h4>
+          
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Presence</th>
+            <th>Constraints / Enum</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><code class="param-name">tool</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td>-</td>
+          <td>Optional name of a specific tool to inspect.</td>
+        </tr>
+      
+        <tr>
+          <td><code class="param-name">format</code></td>
+          <td><span class="type-badge string">string</span></td>
+          <td><span class="opt-badge">Optional</span></td>
+          <td><code>html | json | text</code></td>
+          <td>Desired output format (defaults to html).</td>
+        </tr>
+      
+        </tbody>
+      </table>
+    
+        </div>
+
+        <div class="tool-section">
+          <h4 class="section-title">Expected Output Format</h4>
+          <p class="output-desc">HTML documentation string (in content text) and structured metadata.</p>
+          <div class="code-block-container">
+            <pre><code class="language-json">{
+  &quot;format&quot;: &quot;html&quot;,
+  &quot;totalTools&quot;: 31,
+  &quot;categories&quot;: [
+    &quot;Content Management&quot;,
+    &quot;Revisions &amp; Consents&quot;,
+    &quot;Founder Submissions&quot;,
+    &quot;News Curation&quot;,
+    &quot;News Sources&quot;,
+    &quot;Delivery &amp; Notifications&quot;,
+    &quot;Newsletter Management&quot;,
+    &quot;Newsletter Publishing&quot;,
+    &quot;Plugin Utilities&quot;
+  ],
+  &quot;html&quot;: &quot;&lt;!doctype html&gt;...&quot;
+}</code></pre>
+          </div>
+        </div>
+      </article>
+    
+    </main>
+
+    <footer>
+      <p>Volta MCP Documentation &bull; Generated for Volta Newsletter & Curation System</p>
+    </footer>
+  </div>
+
+  <script>
+    let currentCategory = 'ALL';
+    let currentQuery = '';
+
+    function filterCategory(cat, btn) {
+      currentCategory = cat;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilters();
+    }
+
+    function handleSearch(val) {
+      currentQuery = (val || '').toLowerCase().trim();
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const cards = document.querySelectorAll('.tool-card');
+      cards.forEach(card => {
+        const cat = card.getAttribute('data-category');
+        const name = card.getAttribute('data-name').toLowerCase();
+        const text = card.textContent.toLowerCase();
+
+        const matchCat = (currentCategory === 'ALL' || cat === currentCategory);
+        const matchQuery = (!currentQuery || name.includes(currentQuery) || text.includes(currentQuery));
+
+        if (matchCat && matchQuery) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

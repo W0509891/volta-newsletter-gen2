@@ -8,6 +8,7 @@ import {
 } from '@/lib/db/queries';
 import { AdminNavbar } from '@/components/admin/Navbar';
 import { ItemEditor } from '@/components/admin/ItemEditor';
+import { requireAdminPage } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,7 @@ export default async function ItemDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdminPage();
   const { id } = await params;
   const [item, consentRecords, contacts, events, newsletters] = await Promise.all([
     getContentItemById(id),

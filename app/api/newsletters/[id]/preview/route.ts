@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAdminSession } from '@/lib/auth/session';
 import {
   getNewsletterById,
   getNewsletterItemsWithContent,
@@ -12,6 +13,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!(await getAdminSession())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
   const newsletter = await getNewsletterById(id);
 

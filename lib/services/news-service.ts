@@ -1,15 +1,17 @@
 import {
-  createNewsSource, deleteNewsSource,
+  createNewsSource,
+  deleteNewsSource,
   getNewsCandidateById,
   getNewsCandidates,
   getNewsSources,
-
+  updateNewsSourceEnabled as updateNewsSourceEnabledQuery,
   updateNewsCandidateStatus,
 } from '@/lib/db/queries';
 import { aggregateNewsSources } from '@/lib/news/aggregator';
 import { NewsCandidateStatus, NewsSourceType } from '@/lib/types';
 import { createContentItemFromIntake } from './content-service';
 import { auditAgentAction } from './audit-service';
+import { checkDoNotFeature, formatDoNotFeatureError } from './do-not-feature-service';
 
 export async function addNewsSource(data: {
   name: string;
@@ -32,6 +34,11 @@ export async function listNewsSources(filters?: { enabled?: boolean }) {
 
 export async function checkNewsSourcesNow() {
   return aggregateNewsSources();
+}
+
+
+export async function updateNewsSourceEnabled(id: string, state: boolean) {
+  return updateNewsSourceEnabledQuery(id, state);
 }
 
 export async function searchNewsCandidates(filters?: {
@@ -57,6 +64,20 @@ export async function promoteNewsCandidate(id: string) {
   const candidate = await getNewsCandidateById(id);
   if (!candidate) {
     return { success: false as const, error: 'News candidate not found' };
+  }
+
+  const doNotFeature = await checkDoNotFeature({
+    title: candidate.title,
+    summary: [candidate.aiSummary, candidate.rawExcerpt],
+    body: candidate.rawContent,
+    url: candidate.canonicalUrl,
+  });
+  if (doNotFeature.blocked) {
+    return {
+      success: false as const,
+      error: formatDoNotFeatureError(doNotFeature.matches),
+      doNotFeatureMatches: doNotFeature.matches,
+    };
   }
 
   const item = await createContentItemFromIntake({

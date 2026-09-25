@@ -18,6 +18,18 @@ import {
 } from '@/lib/mailchimp';
 import { evaluateNewsletterPublicationEligibility } from './publication-eligibility-service';
 
+type NewsletterEligibility = Awaited<ReturnType<typeof evaluateNewsletterPublicationEligibility>>;
+
+function ineligibleNewsletterResult(eligibility: NewsletterEligibility) {
+  return {
+    success: false as const,
+    error: `Newsletter contains ineligible content: ${eligibility.reasons.join(' ')}`,
+    doNotFeatureMatches: eligibility.items.flatMap(({ item, eligibility: itemEligibility }) =>
+      itemEligibility.doNotFeatureMatches.map((match) => ({ ...match, contentItemId: item.id }))
+    ),
+  };
+}
+
 export async function createDispatchNewsletter(data: {
   slug: string;
   subject: string;
@@ -54,10 +66,7 @@ export async function renderDispatchNewsletter(newsletterId: string) {
 export async function pushDispatchNewsletterToMailchimp(newsletterId: string) {
   const eligibility = await evaluateNewsletterPublicationEligibility(newsletterId);
   if (!eligibility.eligible) {
-    return {
-      success: false as const,
-      error: `Newsletter contains ineligible content: ${eligibility.reasons.join(' ')}`,
-    };
+    return ineligibleNewsletterResult(eligibility);
   }
 
   const rendered = await renderDispatchNewsletter(newsletterId);
@@ -103,10 +112,7 @@ export async function sendDispatchNewsletter(newsletterId: string) {
 
   const eligibility = await evaluateNewsletterPublicationEligibility(newsletterId);
   if (!eligibility.eligible) {
-    return {
-      success: false as const,
-      error: `Newsletter contains ineligible content: ${eligibility.reasons.join(' ')}`,
-    };
+    return ineligibleNewsletterResult(eligibility);
   }
 
   let campaignId = newsletter.mailchimpCampaignId;

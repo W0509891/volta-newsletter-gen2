@@ -270,3 +270,12 @@ FROM content_revisions cr
 WHERE cr.content_item_id = ci.id
   AND cr.revision_number = 1
   AND ci.current_revision_id IS NULL;
+
+create table if not exists migrations (
+                                          id uuid primary key default gen_random_uuid(),
+                                          migration varchar(255),
+                                          name varchar(255),
+                                          date_applied timestamp default current_timestamp,
+                                          sql text
+);
+

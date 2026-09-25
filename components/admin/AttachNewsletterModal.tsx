@@ -26,6 +26,7 @@ export function AttachNewsletterModal({
   const [section, setSection] = useState<NewsletterSection>('STORIES');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -34,8 +35,13 @@ export function AttachNewsletterModal({
     if (!selectedNewsletterId) return;
 
     setLoading(true);
+    setError(null);
     try {
-      await attachItemToNewsletterAction(selectedNewsletterId, itemId, section);
+      const result = await attachItemToNewsletterAction(selectedNewsletterId, itemId, section);
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
@@ -108,6 +114,12 @@ export function AttachNewsletterModal({
                 <option value="COMMUNITY">💬 Community Updates & Discussion</option>
               </select>
             </div>
+
+            {error && (
+              <p className="text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-lg px-3 py-2">
+                {error}
+              </p>
+            )}
 
             <div className="pt-3 flex justify-end space-x-2">
               <button

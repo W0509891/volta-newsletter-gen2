@@ -336,6 +336,173 @@ export const VOLTA_MCP_TOOLS: ToolDocumentation[] = [
     },
   },
   {
+    name: 'do_not_feature.insert',
+    category: 'Do Not Feature',
+    description: 'Insert an entity into the do-not-feature suppression list.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          required: true,
+          validation: '1-255 chars',
+          description: 'Name of the person, company, or entity to suppress from featuring.',
+        },
+        requestedAt: {
+          type: 'string',
+          format: 'date / iso-date',
+          required: false,
+          description: 'Date the request was made (defaults to current date).',
+        },
+        note: {
+          type: 'string',
+          required: false,
+          description: 'Context or rationale for the do-not-feature request.',
+        },
+        enabled: {
+          type: 'boolean',
+          required: false,
+          description: 'Whether the do-not-feature suppression is currently active.',
+        },
+      },
+      required: ['name'],
+    },
+    expectedOutput: {
+      description: 'The created do-not-feature record.',
+      sample: {
+        entry: {
+          id: '1ca7b810-9dad-11d1-80b4-00c04fd430cc',
+          name: 'Acme Corp',
+          requestedAt: '2026-09-25',
+          note: 'Requested exclusion from newsletter highlights.',
+          enabled: true,
+          createdAt: '2026-09-25T10:00:00.000Z',
+          updatedAt: '2026-09-25T10:00:00.000Z',
+        },
+      },
+    },
+  },
+  {
+    name: 'do_not_feature.update',
+    category: 'Do Not Feature',
+    description: 'Update an existing entry in the do-not-feature suppression list.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          format: 'uuid',
+          required: true,
+          description: 'UUID of the do-not-feature entry to update.',
+        },
+        name: {
+          type: 'string',
+          required: false,
+          validation: '1-255 chars',
+          description: 'Updated name of the suppressed entity.',
+        },
+        requestedAt: {
+          type: 'string',
+          format: 'date / iso-date',
+          required: false,
+          description: 'Updated request date.',
+        },
+        note: {
+          type: 'string',
+          required: false,
+          description: 'Updated note or rationale.',
+        },
+        enabled: {
+          type: 'boolean',
+          required: false,
+          description: 'Updated active/suppressed status.',
+        },
+      },
+      required: ['id'],
+    },
+    expectedOutput: {
+      description: 'The updated do-not-feature record.',
+      sample: {
+        entry: {
+          id: '1ca7b810-9dad-11d1-80b4-00c04fd430cc',
+          name: 'Acme Corp',
+          requestedAt: '2026-09-25',
+          note: 'Updated exclusion request.',
+          enabled: false,
+          createdAt: '2026-09-25T10:00:00.000Z',
+          updatedAt: '2026-09-25T12:00:00.000Z',
+        },
+      },
+    },
+  },
+  {
+    name: 'do_not_feature.list',
+    category: 'Do Not Feature',
+    description: 'List entries in the do-not-feature suppression list.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        enabled: {
+          type: 'boolean',
+          required: false,
+          description: 'Filter entries by active/enabled status.',
+        },
+        search: {
+          type: 'string',
+          required: false,
+          description: 'Search string matching name or note.',
+        },
+      },
+    },
+    expectedOutput: {
+      description: 'An array of do-not-feature entries.',
+      sample: {
+        entries: [
+          {
+            id: '1ca7b810-9dad-11d1-80b4-00c04fd430cc',
+            name: 'Acme Corp',
+            requestedAt: '2026-09-25',
+            note: 'Requested exclusion from newsletter highlights.',
+            enabled: true,
+            createdAt: '2026-09-25T10:00:00.000Z',
+            updatedAt: '2026-09-25T10:00:00.000Z',
+          },
+        ],
+      },
+    },
+  },
+  {
+    name: 'do_not_feature.get',
+    category: 'Do Not Feature',
+    description: 'Get a do-not-feature entry by ID.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          format: 'uuid',
+          required: true,
+          description: 'UUID of the do-not-feature record.',
+        },
+      },
+      required: ['id'],
+    },
+    expectedOutput: {
+      description: 'The do-not-feature record or null.',
+      sample: {
+        entry: {
+          id: '1ca7b810-9dad-11d1-80b4-00c04fd430cc',
+          name: 'Acme Corp',
+          requestedAt: '2026-09-25',
+          note: 'Requested exclusion from newsletter highlights.',
+          enabled: true,
+          createdAt: '2026-09-25T10:00:00.000Z',
+          updatedAt: '2026-09-25T10:00:00.000Z',
+        },
+      },
+    },
+  },
+  {
     name: 'submission.list',
     category: 'Founder Submissions',
     description: 'List intake submissions from founders for curation triage.',
@@ -737,6 +904,43 @@ export const VOLTA_MCP_TOOLS: ToolDocumentation[] = [
         source: {
           id: 'bca7b810-9dad-11d1-80b4-00c04fd430cd',
           deleted: true,
+        },
+      },
+    },
+  },
+  {
+    name: 'source.set_enabled',
+    category: 'News Sources',
+    description: 'Enable or disable a configured news source.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          required: true,
+          validation: '1-180 chars',
+          description: 'ID of the news source to update.',
+        },
+        enabled: {
+          type: 'boolean',
+          required: true,
+          description: 'Whether the news source is enabled for crawling.',
+        },
+      },
+      required: ['id', 'enabled'],
+    },
+    expectedOutput: {
+      description: 'The updated news source object.',
+      sample: {
+        source: {
+          id: 'bca7b810-9dad-11d1-80b4-00c04fd430cd',
+          name: 'Entrevestor',
+          type: 'RSS',
+          url: 'https://entrevestor.com/feed',
+          enabled: true,
+          pollingIntervalMinutes: 1440,
+          priority: 0,
+          updatedAt: '2026-09-25T00:00:00.000Z',
         },
       },
     },
