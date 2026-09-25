@@ -28,6 +28,7 @@ import {
 } from '@/lib/services/curation-service';
 import {
   addNewsSource,
+removeNewsSource,
   checkNewsSourcesNow,
   dismissNewsCandidate,
   getNewsCandidate,
@@ -40,6 +41,7 @@ import {
   buildNewsDigest,
   sendNewsDigest,
 } from '@/lib/notifications/notification-service';
+import { getMcpToolsHtml, VOLTA_MCP_TOOLS } from './docs';
 
 function jsonResult(value: Record<string, unknown>) {
   return {
@@ -332,6 +334,16 @@ export function createVoltaMcpServer() {
   );
 
   server.registerTool(
+    'source.remove',
+    {
+      description: 'Remove a dynamic news source.',
+      inputSchema: {
+        id: z.string().trim().min(1).max(180),
+      },
+    },
+    async (input) => jsonResult({ source: await removeNewsSource(input.id) })
+  )
+  server.registerTool(
     'source.check_now',
     {
       description: 'Run news aggregation for all enabled sources now.',
@@ -464,6 +476,61 @@ export function createVoltaMcpServer() {
       inputSchema: { newsletterId: z.string().uuid() },
     },
     async ({ newsletterId }) => jsonResult(await sendDispatchNewsletter(newsletterId))
+  );
+
+  server.registerResource(
+    'volta-mcp-documentation',
+    'docs://mcp-tools',
+    {
+      title: 'Volta MCP Tools Documentation',
+      description: 'Complete HTML reference and specifications for all Volta MCP tools and expected outputs.',
+      mimeType: 'text/html',
+    },
+    async () => ({
+      contents: [
+        {
+          uri: 'docs://mcp-tools',
+          mimeType: 'text/html',
+          text: getMcpToolsHtml(),
+        },
+      ],
+    })
+  );
+
+  server.registerTool(
+    'plugin.help',
+    {
+      description: 'Show comprehensive HTML documentation, parameter schemas, and expected outputs for all Volta MCP tools.',
+      inputSchema: {
+        tool: z.string().optional(),
+        format: z.enum(['html', 'json', 'text']).optional(),
+      },
+    },
+    async (input) => {
+      const format = input?.format;
+      const tool = input?.tool;
+      const html = getMcpToolsHtml();
+
+      if (format === 'json') {
+        const filteredTools = tool
+          ? VOLTA_MCP_TOOLS.filter((t) => t.name.toLowerCase() === tool.toLowerCase())
+          : VOLTA_MCP_TOOLS;
+        return jsonResult({
+          tools: filteredTools,
+          totalTools: filteredTools.length,
+          html,
+        });
+      }
+
+      return {
+        content: [{ type: 'text' as const, text: html }],
+        structuredContent: {
+          contentType: 'text/html',
+          html,
+          totalTools: VOLTA_MCP_TOOLS.length,
+        },
+      };
+    }
   );
 
   return server;

@@ -1190,6 +1190,16 @@ export async function updateNewsSourceCheckResult(
   );
 }
 
+export async function deleteNewsSource(id: string): Promise<void> {
+  await query(
+    `
+      DELETE FROM news_sources
+      WHERE id = $1
+    `,
+    [id]
+  );
+}
+
 export async function upsertNewsCandidate(data: {
   sourceId?: string | null;
   canonicalUrl: string;

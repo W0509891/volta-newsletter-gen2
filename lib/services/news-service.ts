@@ -1,8 +1,9 @@
 import {
-  createNewsSource,
+  createNewsSource, deleteNewsSource,
   getNewsCandidateById,
   getNewsCandidates,
   getNewsSources,
+
   updateNewsCandidateStatus,
 } from '@/lib/db/queries';
 import { aggregateNewsSources } from '@/lib/news/aggregator';
@@ -19,6 +20,10 @@ export async function addNewsSource(data: {
   priority?: number;
 }) {
   return createNewsSource(data);
+}
+
+export async function removeNewsSource(id: string) {
+  return deleteNewsSource(id);
 }
 
 export async function listNewsSources(filters?: { enabled?: boolean }) {
